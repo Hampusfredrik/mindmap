@@ -5,7 +5,7 @@ export const createGraphSchema = z.object({
 })
 
 export const createNodeSchema = z.object({
-  graphId: z.string().uuid(),
+  graphId: z.string().min(1, "Graph ID is required"),
   title: z.string().min(1, "Title is required"),
   x: z.number(),
   y: z.number(),
@@ -13,7 +13,7 @@ export const createNodeSchema = z.object({
 })
 
 export const updateNodeSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, "ID is required"),
   title: z.string().min(1, "Title is required").optional(),
   x: z.number().optional(),
   y: z.number().optional(),
@@ -22,14 +22,14 @@ export const updateNodeSchema = z.object({
 })
 
 export const createEdgeSchema = z.object({
-  graphId: z.string().uuid(),
-  sourceNodeId: z.string().uuid(),
-  targetNodeId: z.string().uuid(),
+  graphId: z.string().min(1, "Graph ID is required"),
+  sourceNodeId: z.string().min(1, "Source node ID is required"),
+  targetNodeId: z.string().min(1, "Target node ID is required"),
   detail: z.string().optional(),
 })
 
 export const updateEdgeSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, "ID is required"),
   detail: z.string().optional(),
   updatedAt: z.string().datetime().optional(), // For OCC
 })
