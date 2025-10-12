@@ -14,25 +14,106 @@ import ReactFlow, {
   EdgeTypes,
   ReactFlowProvider,
   useReactFlow,
+  getBezierPath,
 } from "reactflow"
 import "reactflow/dist/style.css"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Textarea } from "@/components/ui/textarea"
 
-// Enhanced custom node component with selection state
+// Modern custom node component with selection state and editing
 function CustomNode({ data, id, selected }: { data: any; id: string; selected?: boolean }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState(data.label)
+
+  const handleTitleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsEditing(true)
+  }
+
+  const handleTitleSubmit = () => {
+    // TODO: Update node title via API
+    data.label = editTitle
+    setIsEditing(false)
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleTitleSubmit()
+    } else if (e.key === 'Escape') {
+      setEditTitle(data.label)
+      setIsEditing(false)
+    }
+  }
+
   return (
-    <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 cursor-pointer transition-colors ${
+    <div className={`px-6 py-4 shadow-lg rounded-xl bg-white border-2 cursor-pointer transition-all duration-200 hover:shadow-xl ${
       selected 
-        ? 'border-blue-500 bg-blue-50' 
-        : 'border-stone-400 hover:border-blue-400'
+        ? 'border-blue-500 bg-blue-50 shadow-blue-200' 
+        : 'border-gray-200 hover:border-blue-300'
     }`}>
-      <div className="font-bold">{data.label}</div>
+      {isEditing ? (
+        <input
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onBlur={handleTitleSubmit}
+          onKeyDown={handleKeyPress}
+          className="w-full bg-transparent border-none outline-none font-bold text-gray-900 text-center"
+          autoFocus
+        />
+      ) : (
+        <div 
+          className="font-bold text-gray-900 hover:text-blue-600 transition-colors"
+          onClick={handleTitleClick}
+        >
+          {data.label}
+        </div>
+      )}
       {data.detail && (
-        <div className="text-xs text-gray-500 mt-1">{data.detail}</div>
+        <div className="text-xs text-gray-500 mt-2 text-center">{data.detail}</div>
       )}
     </div>
+  )
+}
+
+// Custom edge component with arrows
+function CustomEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, selected }: any) {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  })
+
+  return (
+    <>
+      <path
+        id={id}
+        style={style}
+        className="react-flow__edge-path"
+        d={edgePath}
+        markerEnd="url(#arrowhead)"
+      />
+      <defs>
+        <marker
+          id="arrowhead"
+          markerWidth="10"
+          markerHeight="7"
+          refX="9"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon
+            points="0 0, 10 3.5, 0 7"
+            fill="#64748b"
+          />
+        </marker>
+      </defs>
+    </>
   )
 }
 
@@ -40,7 +121,9 @@ const nodeTypes: NodeTypes = {
   default: CustomNode,
 }
 
-const edgeTypes: EdgeTypes = {}
+const edgeTypes: EdgeTypes = {
+  default: CustomEdge,
+}
 
 interface MindmapEditorProps {
   graphId: string
@@ -99,6 +182,8 @@ interface SimpleEdge {
 function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
   const queryClient = useQueryClient()
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false)
+  const [selectedNodeData, setSelectedNodeData] = useState<any>(null)
   const [performanceMode, setPerformanceMode] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const { fitView } = useReactFlow()
@@ -236,11 +321,17 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   // React Flow event handlers
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    if (!isEditingEnabled) return // Read-only mode
+    if (!isEditingEnabled) {
+      // In read-only mode, open detail sheet
+      setSelectedNodeData(node.data)
+      setDetailSheetOpen(true)
+      return
+    }
 
     if (selectedNode === node.id) {
-      // Second click on same node - deselect
-      setSelectedNode(null)
+      // Second click on same node - open detail sheet
+      setSelectedNodeData(node.data)
+      setDetailSheetOpen(true)
     } else if (selectedNode) {
       // Second click on different node - create edge
       createEdgeMutation.mutate({
@@ -257,19 +348,25 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     setSelectedNode(null)
   }, [])
 
-  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    if (!isEditingEnabled) return // Read-only mode
-
-    // Add new node near double-clicked node
-    const newNodeX = node.position.x + 200
-    const newNodeY = node.position.y
-
-    createNodeMutation.mutate({
-      x: newNodeX,
-      y: newNodeY,
-      title: "New Node",
-    })
-  }, [createNodeMutation, isEditingEnabled])
+  // Node detail update mutation
+  const updateNodeDetailMutation = useMutation({
+    mutationFn: async (data: { id: string; detail: string; updatedAt: string }) => {
+      const response = await fetch(`/api/nodes/${data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) throw new Error("Failed to update node detail")
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      toast.success("Node details updated")
+    },
+    onError: () => {
+      toast.error("Failed to update node details")
+    },
+  })
 
   // Node position update mutation
   const updateNodePositionMutation = useMutation({
@@ -381,6 +478,14 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         >
           {createNodeMutation.isPending ? "Creating..." : "Add Node"}
         </Button>
+        
+        {/* Connection instructions */}
+        {isEditingEnabled && (
+          <div className="mt-3 text-xs text-gray-600">
+            <p><strong>To connect:</strong> Click first node, then second node</p>
+            <p><strong>To edit:</strong> Click selected node again</p>
+          </div>
+        )}
       </div>
 
       {/* React Flow Canvas */}
@@ -391,7 +496,6 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
-        onNodeDoubleClick={onNodeDoubleClick}
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -421,18 +525,75 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
             <>
               • Click to select nodes<br/>
               • Click two nodes to connect<br/>
-              • Double-click to add nodes<br/>
+              • Click selected node to edit details<br/>
               • Drag to move nodes
             </>
           ) : (
             <>
-              • View-only mode<br/>
+              • Click nodes to view details<br/>
               • Use controls to zoom/pan<br/>
               • Enable editing to modify
             </>
           )}
         </p>
       </div>
+
+      {/* Node Detail Sheet */}
+      <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
+        <SheetContent className={isMobile ? "w-full" : "w-[400px]"}>
+          <SheetHeader>
+            <SheetTitle>{selectedNodeData?.label || "Node Details"}</SheetTitle>
+            <SheetDescription>
+              Add detailed information about this concept
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Description</label>
+              <Textarea
+                placeholder="Enter detailed information about this concept..."
+                value={selectedNodeData?.detail || ""}
+                onChange={(e) => {
+                  if (selectedNodeData) {
+                    setSelectedNodeData({
+                      ...selectedNodeData,
+                      detail: e.target.value
+                    })
+                  }
+                }}
+                className="mt-2 min-h-[200px]"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  if (selectedNodeData && selectedNode) {
+                    const node = nodes.find(n => n.id === selectedNode)
+                    if (node?.data?.updatedAt) {
+                      updateNodeDetailMutation.mutate({
+                        id: selectedNode,
+                        detail: selectedNodeData.detail || "",
+                        updatedAt: node.data.updatedAt,
+                      })
+                    }
+                  }
+                  setDetailSheetOpen(false)
+                }}
+                disabled={updateNodeDetailMutation.isPending}
+                className="flex-1"
+              >
+                {updateNodeDetailMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDetailSheetOpen(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
