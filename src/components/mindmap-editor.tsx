@@ -14,12 +14,11 @@ import ReactFlow, {
   EdgeTypes,
   ReactFlowProvider,
 } from "reactflow"
-import "reactflow/dist/style.css"
 import { CustomNode } from "./custom-node"
 import { CustomEdge } from "./custom-edge"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { debounce } from "lodash"
+import debounce from "lodash/debounce"
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,

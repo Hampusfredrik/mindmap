@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { debounce } from "lodash"
+import debounce from "lodash/debounce"
 
 export function CustomNode({ data, id }: NodeProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
