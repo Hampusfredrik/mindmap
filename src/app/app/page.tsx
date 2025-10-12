@@ -1,17 +1,40 @@
-import { db } from "@/lib/db"
-import { graphs } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 
-export default async function AppPage() {
-  // Mock user ID for development
-  const userId = "dev-user-123"
+export default function AppPage() {
+  const [userGraphs, setUserGraphs] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchGraphs = async () => {
+      try {
+        const response = await fetch("/api/graph")
+        if (response.ok) {
+          const graphs = await response.json()
+          setUserGraphs(graphs)
+        }
+      } catch (error) {
+        console.error("Failed to fetch graphs:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchGraphs()
+  }, [])
   
-  const userGraphs = await db
-    .select()
-    .from(graphs)
-    .where(eq(graphs.userId, userId))
-  
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <div className="text-lg">Loading your mindmaps...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -46,12 +69,34 @@ export default async function AppPage() {
           <p className="text-gray-500 mb-6">
             Get started by creating your first mindmap
           </p>
-          <Link
-            href="/api/graph"
+          <button
+            onClick={async () => {
+              try {
+                console.log("Creating new mindmap...")
+                const response = await fetch("/api/graph", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ title: "New Mindmap" }),
+                })
+                console.log("Response status:", response.status)
+                if (response.ok) {
+                  const graph = await response.json()
+                  console.log("Graph created:", graph)
+                  window.location.href = `/app/${graph.id}`
+                } else {
+                  const errorText = await response.text()
+                  console.error("Failed to create mindmap:", errorText)
+                  alert(`Failed to create mindmap: ${response.status}`)
+                }
+              } catch (error) {
+                console.error("Error creating mindmap:", error)
+                alert("Failed to create mindmap: " + (error instanceof Error ? error.message : String(error)))
+              }
+            }}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
           >
             Create your first mindmap
-          </Link>
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
