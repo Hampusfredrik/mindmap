@@ -5,6 +5,11 @@ import { db } from "@/lib/db"
 import { nodes } from "@/lib/db/schema"
 import { z } from "zod"
 
+// Extend global to include mockNodes for demo purposes
+declare global {
+  var mockNodes: any[]
+}
+
 export async function POST(request: NextRequest) {
   const session = await requireAuth()
   
@@ -16,7 +21,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { graphId, title, x, y, detail } = createNodeSchema.parse(body)
     
-    // For mock graphs, skip ownership verification and return mock node
+    // For mock graphs, skip ownership verification and store mock node
     if (graphId.startsWith('mock-')) {
       const mockNode = {
         id: `mock-node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -28,6 +33,12 @@ export async function POST(request: NextRequest) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
+      
+      // Store the mock node in global memory (for demo purposes)
+      if (!global.mockNodes) {
+        global.mockNodes = []
+      }
+      global.mockNodes.push(mockNode)
       
       return NextResponse.json(mockNode)
     }

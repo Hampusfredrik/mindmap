@@ -4,6 +4,11 @@ import { db } from "@/lib/db"
 import { nodes, edges } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 
+// Extend global to include mockNodes for demo purposes
+declare global {
+  var mockNodes: any[]
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,7 +21,7 @@ export async function GET(
   
   const resolvedParams = await params
   
-  // For mock graphs, skip ownership verification
+  // For mock graphs, skip ownership verification and return stored mock data
   if (resolvedParams.id.startsWith('mock-')) {
     const mockGraph = {
       id: resolvedParams.id,
@@ -25,9 +30,14 @@ export async function GET(
       createdAt: new Date().toISOString(),
     }
     
+    // Get mock nodes from a simple in-memory store
+    // In a real app, this would come from the database
+    const mockNodes = global.mockNodes || []
+    const graphMockNodes = mockNodes.filter((node: any) => node.graphId === resolvedParams.id)
+    
     return NextResponse.json({
       graph: mockGraph,
-      nodes: [],
+      nodes: graphMockNodes,
       edges: [],
     })
   }
