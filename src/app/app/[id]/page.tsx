@@ -1,6 +1,4 @@
-import { notFound, redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { graphs } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
@@ -11,11 +9,8 @@ interface PageProps {
 }
 
 export default async function GraphPage({ params }: PageProps) {
-  const session = await getServerSession(authOptions)
-  
-  if (!session?.user?.id) {
-    redirect("/")
-  }
+  // Mock user ID for development
+  const userId = "dev-user-123"
   
   const resolvedParams = await params
   const graph = await db
@@ -28,9 +23,10 @@ export default async function GraphPage({ params }: PageProps) {
     notFound()
   }
   
-  if (graph[0].userId !== session.user.id) {
-    redirect("/app")
-  }
+  // Skip ownership check for now - will add back with auth
+  // if (graph[0].userId !== userId) {
+  //   redirect("/app")
+  // }
   
   return (
     <div className="h-screen">

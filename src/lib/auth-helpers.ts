@@ -1,22 +1,27 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { NextResponse } from "next/server"
 
+// Temporary mock user for development
 export async function getSession() {
-  return await getServerSession(authOptions)
+  return {
+    user: {
+      id: "dev-user-123",
+      name: "Development User",
+      email: "dev@example.com",
+      image: null
+    }
+  }
 }
 
 export async function requireAuth() {
-  const session = await getSession()
-  
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    )
+  // Always return mock user for now
+  return {
+    user: {
+      id: "dev-user-123",
+      name: "Development User",
+      email: "dev@example.com",
+      image: null
+    }
   }
-  
-  return session
 }
 
 export async function verifyGraphOwnership(graphId: string, userId: string) {

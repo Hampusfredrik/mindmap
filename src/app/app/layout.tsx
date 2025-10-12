@@ -1,6 +1,3 @@
-import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { AppHeader } from "@/components/app-header"
 
 export default async function AppLayout({
@@ -8,10 +5,14 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getServerSession(authOptions)
-  
-  if (!session) {
-    redirect("/")
+  // Mock user for development
+  const session = {
+    user: {
+      id: "dev-user-123",
+      name: "Development User",
+      email: "dev@example.com",
+      image: null
+    }
   }
   
   return (

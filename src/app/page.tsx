@@ -1,15 +1,12 @@
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import Link from "next/link"
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions)
+  // For now, always redirect to app since we're using mock auth
+  redirect("/app")
   
-  if (session) {
-    redirect("/app")
-  }
-  
+  // This code will be used when we add real authentication
+  /*
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -21,13 +18,14 @@ export default async function HomePage() {
             Create and share interactive mindmaps
           </p>
           <Link
-            href="/api/auth/signin/google"
+            href="/app"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 inline-block text-center"
           >
-            Sign in with Google
+            Get Started
           </Link>
         </div>
       </div>
     </div>
   )
+  */
 }

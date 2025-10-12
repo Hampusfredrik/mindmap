@@ -1,22 +1,16 @@
-import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { graphs } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import Link from "next/link"
 
 export default async function AppPage() {
-  const session = await getServerSession(authOptions)
-  
-  if (!session?.user?.id) {
-    redirect("/")
-  }
+  // Mock user ID for development
+  const userId = "dev-user-123"
   
   const userGraphs = await db
     .select()
     .from(graphs)
-    .where(eq(graphs.userId, session.user.id))
+    .where(eq(graphs.userId, userId))
   
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -61,7 +55,7 @@ export default async function AppPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {userGraphs.map((graph) => (
+          {userGraphs.map((graph: any) => (
             <Link
               key={graph.id}
               href={`/app/${graph.id}`}

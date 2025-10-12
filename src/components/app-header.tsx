@@ -1,6 +1,6 @@
 "use client"
 
-import { signOut } from "next-auth/react"
+// import { signOut } from "next-auth/react" // Temporarily disabled
 import { Button } from "@/components/ui/button"
 import { Plus, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -67,7 +67,10 @@ export function AppHeader({ user }: AppHeaderProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => signOut()}
+                onClick={() => {
+                  // Temporarily disabled - will add back with auth
+                  alert("Logout will be available when authentication is added")
+                }}
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
