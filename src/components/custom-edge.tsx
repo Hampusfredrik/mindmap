@@ -5,7 +5,7 @@ import { EdgeProps, getBezierPath, EdgeLabelRenderer } from "reactflow"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { debounce } from "lodash"
 
@@ -21,7 +21,6 @@ export function CustomEdge({
 }: EdgeProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [detail, setDetail] = useState(data?.detail || "")
-  const queryClient = useQueryClient()
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,

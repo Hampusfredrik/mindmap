@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, real, integer } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, uuid, real } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
 export const graphs = pgTable("graphs", {

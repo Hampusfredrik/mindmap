@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, verifyGraphOwnership } from "@/lib/auth-helpers"
 import { db } from "@/lib/db"
-import { graphs, nodes, edges } from "@/lib/db/schema"
+import { nodes, edges } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAuth()
   
@@ -14,7 +14,8 @@ export async function GET(
     return session
   }
   
-  const graph = await verifyGraphOwnership(params.id, session.user.id!)
+  const resolvedParams = await params
+  const graph = await verifyGraphOwnership(resolvedParams.id, session.user!.id!)
   
   if (graph instanceof NextResponse) {
     return graph
@@ -24,12 +25,12 @@ export async function GET(
   const graphNodes = await db
     .select()
     .from(nodes)
-    .where(eq(nodes.graphId, params.id))
+    .where(eq(nodes.graphId, resolvedParams.id))
   
   const graphEdges = await db
     .select()
     .from(edges)
-    .where(eq(edges.graphId, params.id))
+    .where(eq(edges.graphId, resolvedParams.id))
   
   return NextResponse.json({
     graph,

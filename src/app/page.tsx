@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import Link from "next/link"
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
@@ -19,12 +20,12 @@ export default async function HomePage() {
           <p className="text-gray-600 mb-6">
             Create and share interactive mindmaps
           </p>
-          <a
+          <Link
             href="/api/auth/signin/google"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 inline-block"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 inline-block text-center"
           >
             Sign in with Google
-          </a>
+          </Link>
         </div>
       </div>
     </div>

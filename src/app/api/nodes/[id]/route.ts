@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAuth, verifyGraphOwnership } from "@/lib/auth-helpers"
+import { requireAuth } from "@/lib/auth-helpers"
 import { updateNodeSchema } from "@/lib/validations"
 import { db } from "@/lib/db"
 import { nodes, graphs } from "@/lib/db/schema"
-import { eq, and } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { z } from "zod"
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAuth()
   
@@ -18,7 +18,8 @@ export async function PUT(
   
   try {
     const body = await request.json()
-    const { id, updatedAt, ...updateData } = updateNodeSchema.parse({ ...body, id: params.id })
+    const resolvedParams = await params
+    const { updatedAt, ...updateData } = updateNodeSchema.parse({ ...body, id: resolvedParams.id })
     
     // Get the node to verify ownership through graph
     const existingNode = await db
@@ -28,7 +29,7 @@ export async function PUT(
       })
       .from(nodes)
       .innerJoin(graphs, eq(nodes.graphId, graphs.id))
-      .where(eq(nodes.id, params.id))
+      .where(eq(nodes.id, resolvedParams.id))
       .limit(1)
     
     if (existingNode.length === 0) {
@@ -38,7 +39,7 @@ export async function PUT(
       )
     }
     
-    if (existingNode[0].graph.userId !== session.user.id!) {
+    if (existingNode[0].graph.userId !== session.user!.id!) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
@@ -62,7 +63,7 @@ export async function PUT(
         ...updateData,
         updatedAt: new Date(),
       })
-      .where(eq(nodes.id, params.id))
+      .where(eq(nodes.id, resolvedParams.id))
       .returning()
     
     return NextResponse.json(updatedNode)
@@ -83,7 +84,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAuth()
   
@@ -92,6 +93,7 @@ export async function DELETE(
   }
   
   // Get the node to verify ownership through graph
+  const resolvedParams = await params
   const existingNode = await db
     .select({
       node: nodes,
@@ -99,7 +101,7 @@ export async function DELETE(
     })
     .from(nodes)
     .innerJoin(graphs, eq(nodes.graphId, graphs.id))
-    .where(eq(nodes.id, params.id))
+    .where(eq(nodes.id, resolvedParams.id))
     .limit(1)
   
   if (existingNode.length === 0) {
@@ -109,14 +111,14 @@ export async function DELETE(
     )
   }
   
-  if (existingNode[0].graph.userId !== session.user.id!) {
+  if (existingNode[0].graph.userId !== session.user!.id!) {
     return NextResponse.json(
       { error: "Access denied" },
       { status: 403 }
     )
   }
   
-  await db.delete(nodes).where(eq(nodes.id, params.id))
+  await db.delete(nodes).where(eq(nodes.id, resolvedParams.id))
   
   return NextResponse.json({ success: true })
 }

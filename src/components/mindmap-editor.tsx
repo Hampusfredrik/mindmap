@@ -4,7 +4,6 @@ import { useCallback, useState, useMemo, useEffect } from "react"
 import ReactFlow, {
   Node,
   Edge,
-  addEdge,
   Connection,
   useNodesState,
   useEdgesState,
@@ -35,13 +34,41 @@ interface MindmapEditorProps {
   graphTitle: string
 }
 
-function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
+interface GraphData {
+  graph: {
+    id: string
+    title: string
+    userId: string
+    createdAt: string
+  }
+  nodes: Array<{
+    id: string
+    graphId: string
+    title: string
+    detail?: string
+    x: number
+    y: number
+    createdAt: string
+    updatedAt: string
+  }>
+  edges: Array<{
+    id: string
+    graphId: string
+    sourceNodeId: string
+    targetNodeId: string
+    detail?: string
+    createdAt: string
+    updatedAt: string
+  }>
+}
+
+function MindmapEditorInner({ graphId }: MindmapEditorProps) {
   const queryClient = useQueryClient()
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [performanceMode, setPerformanceMode] = useState(false)
 
   // Fetch graph data
-  const { data: graphData, isLoading } = useQuery({
+  const { data: graphData, isLoading } = useQuery<GraphData>({
     queryKey: ["graph", graphId],
     queryFn: async () => {
       const response = await fetch(`/api/graph/${graphId}`)
@@ -53,7 +80,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
   // Convert API data to React Flow format
   const initialNodes: Node[] = useMemo(() => {
     if (!graphData?.nodes) return []
-    return graphData.nodes.map((node: any) => ({
+    return graphData.nodes.map((node) => ({
       id: node.id,
       type: "custom",
       position: { x: node.x, y: node.y },
@@ -67,7 +94,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   const initialEdges: Edge[] = useMemo(() => {
     if (!graphData?.edges) return []
-    return graphData.edges.map((edge: any) => ({
+    return graphData.edges.map((edge) => ({
       id: edge.id,
       source: edge.sourceNodeId,
       target: edge.targetNodeId,
@@ -178,14 +205,14 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
   )
 
   // Event handlers
-  const onNodeDragStop = useCallback((event: any, node: Node) => {
+  const onNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
     const nodeData = nodes.find(n => n.id === node.id)?.data
     if (nodeData?.updatedAt) {
       debouncedUpdatePosition(node.id, node.position.x, node.position.y, nodeData.updatedAt)
     }
   }, [nodes, debouncedUpdatePosition])
 
-  const onNodeClick = useCallback((event: any, node: Node) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     if (selectedNode === node.id) {
       // Second click - create edge if we have a source
       if (selectedNode) {
@@ -214,7 +241,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     }
   }, [createEdgeMutation])
 
-  const onNodeDoubleClick = useCallback((event: any, node: Node) => {
+  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
     // Add new node near double-clicked node
     const newNodeX = node.position.x + 200
     const newNodeY = node.position.y

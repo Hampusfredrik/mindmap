@@ -8,7 +8,7 @@ import { z } from "zod"
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAuth()
   
@@ -18,7 +18,8 @@ export async function PUT(
   
   try {
     const body = await request.json()
-    const { id, updatedAt, ...updateData } = updateEdgeSchema.parse({ ...body, id: params.id })
+    const resolvedParams = await params
+    const { updatedAt, ...updateData } = updateEdgeSchema.parse({ ...body, id: resolvedParams.id })
     
     // Get the edge to verify ownership through graph
     const existingEdge = await db
@@ -28,7 +29,7 @@ export async function PUT(
       })
       .from(edges)
       .innerJoin(graphs, eq(edges.graphId, graphs.id))
-      .where(eq(edges.id, params.id))
+      .where(eq(edges.id, resolvedParams.id))
       .limit(1)
     
     if (existingEdge.length === 0) {
@@ -38,7 +39,7 @@ export async function PUT(
       )
     }
     
-    if (existingEdge[0].graph.userId !== session.user.id!) {
+    if (existingEdge[0].graph.userId !== session.user!.id!) {
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
@@ -62,7 +63,7 @@ export async function PUT(
         ...updateData,
         updatedAt: new Date(),
       })
-      .where(eq(edges.id, params.id))
+      .where(eq(edges.id, resolvedParams.id))
       .returning()
     
     return NextResponse.json(updatedEdge)
@@ -83,7 +84,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAuth()
   
@@ -92,6 +93,7 @@ export async function DELETE(
   }
   
   // Get the edge to verify ownership through graph
+  const resolvedParams = await params
   const existingEdge = await db
     .select({
       edge: edges,
@@ -99,7 +101,7 @@ export async function DELETE(
     })
     .from(edges)
     .innerJoin(graphs, eq(edges.graphId, graphs.id))
-    .where(eq(edges.id, params.id))
+    .where(eq(edges.id, resolvedParams.id))
     .limit(1)
   
   if (existingEdge.length === 0) {
@@ -109,14 +111,14 @@ export async function DELETE(
     )
   }
   
-  if (existingEdge[0].graph.userId !== session.user.id!) {
+  if (existingEdge[0].graph.userId !== session.user!.id!) {
     return NextResponse.json(
       { error: "Access denied" },
       { status: 403 }
     )
   }
   
-  await db.delete(edges).where(eq(edges.id, params.id))
+  await db.delete(edges).where(eq(edges.id, resolvedParams.id))
   
   return NextResponse.json({ success: true })
 }

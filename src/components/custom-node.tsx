@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { debounce } from "lodash"
 
@@ -14,7 +14,6 @@ export function CustomNode({ data, id }: NodeProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [title, setTitle] = useState(data.label || "")
   const [detail, setDetail] = useState(data.detail || "")
-  const queryClient = useQueryClient()
 
   const updateNodeMutation = useMutation({
     mutationFn: async (updateData: { title?: string; detail?: string }) => {

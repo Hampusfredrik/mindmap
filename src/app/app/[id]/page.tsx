@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm"
 import { MindmapEditor } from "@/components/mindmap-editor"
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function GraphPage({ params }: PageProps) {
@@ -17,10 +17,11 @@ export default async function GraphPage({ params }: PageProps) {
     redirect("/")
   }
   
+  const resolvedParams = await params
   const graph = await db
     .select()
     .from(graphs)
-    .where(eq(graphs.id, params.id))
+    .where(eq(graphs.id, resolvedParams.id))
     .limit(1)
   
   if (graph.length === 0) {
@@ -33,7 +34,7 @@ export default async function GraphPage({ params }: PageProps) {
   
   return (
     <div className="h-screen">
-      <MindmapEditor graphId={params.id} graphTitle={graph[0].title} />
+      <MindmapEditor graphId={resolvedParams.id} graphTitle={graph[0].title} />
     </div>
   )
 }
