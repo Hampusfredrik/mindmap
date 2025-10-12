@@ -13,20 +13,29 @@ import ReactFlow, {
   NodeTypes,
   EdgeTypes,
   ReactFlowProvider,
+  useReactFlow,
 } from "reactflow"
-import { CustomNode } from "./custom-node"
-import { CustomEdge } from "./custom-edge"
+import "reactflow/dist/style.css"
+// import { CustomNode } from "./custom-node"
+// import { CustomEdge } from "./custom-edge"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import debounce from "lodash/debounce"
 
-const nodeTypes: NodeTypes = {
-  custom: CustomNode,
+// Simple node component for now
+function SimpleNode({ data }: { data: any }) {
+  return (
+    <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-stone-400">
+      <div className="font-bold">{data.label}</div>
+    </div>
+  )
 }
 
-const edgeTypes: EdgeTypes = {
-  custom: CustomEdge,
+const nodeTypes: NodeTypes = {
+  default: SimpleNode,
 }
+
+const edgeTypes: EdgeTypes = {}
 
 interface MindmapEditorProps {
   graphId: string
@@ -65,6 +74,7 @@ function MindmapEditorInner({ graphId }: MindmapEditorProps) {
   const queryClient = useQueryClient()
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [performanceMode, setPerformanceMode] = useState(false)
+  const { fitView } = useReactFlow()
 
   // Fetch graph data
   const { data: graphData, isLoading } = useQuery<GraphData>({
@@ -79,16 +89,16 @@ function MindmapEditorInner({ graphId }: MindmapEditorProps) {
   // Convert API data to React Flow format
   const initialNodes: Node[] = useMemo(() => {
     if (!graphData?.nodes) return []
-    return graphData.nodes.map((node) => ({
-      id: node.id,
-      type: "custom",
-      position: { x: node.x, y: node.y },
-      data: {
-        label: node.title,
-        detail: node.detail,
-        updatedAt: node.updatedAt,
-      },
-    }))
+      return graphData.nodes.map((node) => ({
+        id: node.id,
+        type: "default",
+        position: { x: node.x, y: node.y },
+        data: {
+          label: node.title,
+          detail: node.detail,
+          updatedAt: node.updatedAt,
+        },
+      }))
   }, [graphData?.nodes])
 
   const initialEdges: Edge[] = useMemo(() => {
@@ -97,7 +107,7 @@ function MindmapEditorInner({ graphId }: MindmapEditorProps) {
       id: edge.id,
       source: edge.sourceNodeId,
       target: edge.targetNodeId,
-      type: "custom",
+      type: "default",
       data: {
         detail: edge.detail,
         updatedAt: edge.updatedAt,
@@ -256,6 +266,14 @@ function MindmapEditorInner({ graphId }: MindmapEditorProps) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-lg">Loading mindmap...</div>
+      </div>
+    )
+  }
+
+  if (!graphData) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-lg text-red-500">Failed to load mindmap</div>
       </div>
     )
   }
