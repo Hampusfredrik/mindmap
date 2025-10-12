@@ -76,40 +76,63 @@ npm run dev
 
 Öppna [http://localhost:3000](http://localhost:3000) i din webbläsare.
 
-## Deployment på Vercel
+## 🚀 Deployment på Vercel
 
-### 1. Skapa Vercel Postgres databas
+### Snabb deployment (Utan autentisering)
+
+Appen är nu konfigurerad för deployment utan autentisering för testning:
+
+1. **Koppla GitHub repository till Vercel**
+2. **Deploy** - Appen fungerar med mock-autentisering
+
+### Sätt upp databas (Krävs för full funktionalitet)
 
 1. Gå till [Vercel Dashboard](https://vercel.com/dashboard)
-2. Skapa ett nytt projekt
-3. Gå till Storage → Create Database → Postgres
-4. Kopiera `DATABASE_URL`
+2. Navigera till ditt projekt
+3. Gå till "Storage" tab
+4. Klicka "Create Database" → "Postgres"
+5. Kopiera `DATABASE_URL` från connection string
+6. Lägg till det i Vercel environment variables
 
-### 2. Sätt upp Google OAuth
+### Kör databas migrationer
 
-1. Gå till [Google Cloud Console](https://console.developers.google.com/)
-2. Skapa ett nytt projekt eller välj befintligt
-3. Aktivera Google+ API
-4. Skapa OAuth 2.0 credentials
-5. Lägg till `https://your-domain.vercel.app/api/auth/callback/google` som redirect URI
-
-### 3. Deploy till Vercel
-
-1. Push koden till GitHub
-2. Importera projektet i Vercel
-3. Lägg till miljövariabler i Vercel dashboard:
-   - `DATABASE_URL`
-   - `AUTH_SECRET`
-   - `NEXTAUTH_URL`
-   - `GOOGLE_CLIENT_ID`
-   - `GOOGLE_CLIENT_SECRET`
-
-### 4. Kör migrationer på produktion
+Efter att ha satt upp databasen, kör migrationer:
 
 ```bash
-# Kör detta efter deployment
+# I Vercel CLI eller lokal miljö med DATABASE_URL
+npm run db:generate
 npm run db:migrate
 ```
+
+### Lägg till autentisering senare (Valfritt)
+
+När du är redo att lägga till Google OAuth:
+
+1. **Sätt upp Google OAuth:**
+   - Gå till [Google Cloud Console](https://console.cloud.google.com/)
+   - Skapa OAuth 2.0 credentials
+   - Lägg till redirect URI: `https://your-app.vercel.app/api/auth/callback/google`
+
+2. **Lägg till environment variables i Vercel:**
+   ```bash
+   AUTH_SECRET=your-secret-key-here
+   NEXTAUTH_URL=https://your-app.vercel.app
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   ```
+
+3. **Återaktivera autentisering i koden:**
+   - Återställ auth-filerna
+   - Uppdatera middleware
+   - Uppdatera komponenter
+
+### Nuvarande status
+
+✅ **Redo för deployment** - App fungerar utan autentisering  
+✅ **Build fungerar** - Alla TypeScript-fel fixade  
+✅ **Mock databas** - Fungerar utan riktig databasanslutning  
+⏳ **Databas setup** - Krävs för att spara mindmaps  
+⏳ **Autentisering** - Kan läggas till senare
 
 ## Användning
 
