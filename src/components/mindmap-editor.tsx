@@ -77,12 +77,20 @@ function MindmapEditorInner({ graphId }: MindmapEditorProps) {
   const { fitView } = useReactFlow()
 
   // Fetch graph data
-  const { data: graphData, isLoading } = useQuery<GraphData>({
+  const { data: graphData, isLoading, error } = useQuery<GraphData>({
     queryKey: ["graph", graphId],
     queryFn: async () => {
+      console.log("Fetching graph data for ID:", graphId)
       const response = await fetch(`/api/graph/${graphId}`)
-      if (!response.ok) throw new Error("Failed to fetch graph")
-      return response.json()
+      console.log("Response status:", response.status)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("API Error:", errorText)
+        throw new Error(`Failed to fetch graph: ${response.status}`)
+      }
+      const data = await response.json()
+      console.log("Graph data received:", data)
+      return data
     },
   })
 
@@ -270,10 +278,27 @@ function MindmapEditorInner({ graphId }: MindmapEditorProps) {
     )
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-lg text-red-500">Error loading mindmap</div>
+        <div className="text-sm text-gray-500 mt-2">
+          {error.message}
+        </div>
+        <div className="text-sm text-gray-500 mt-1">
+          Graph ID: {graphId}
+        </div>
+      </div>
+    )
+  }
+
   if (!graphData) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-lg text-red-500">Failed to load mindmap</div>
+        <div className="text-sm text-gray-500 mt-2">
+          Graph ID: {graphId}
+        </div>
       </div>
     )
   }
