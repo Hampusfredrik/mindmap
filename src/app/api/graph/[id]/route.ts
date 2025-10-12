@@ -4,9 +4,10 @@ import { db } from "@/lib/db"
 import { nodes, edges } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 
-// Extend global to include mockNodes for demo purposes
+// Extend global to include mockNodes and mockEdges for demo purposes
 declare global {
   var mockNodes: any[]
+  var mockEdges: any[]
 }
 
 export async function GET(
@@ -30,15 +31,17 @@ export async function GET(
       createdAt: new Date().toISOString(),
     }
     
-    // Get mock nodes from a simple in-memory store
+    // Get mock nodes and edges from a simple in-memory store
     // In a real app, this would come from the database
     const mockNodes = global.mockNodes || []
+    const mockEdges = global.mockEdges || []
     const graphMockNodes = mockNodes.filter((node: any) => node.graphId === resolvedParams.id)
+    const graphMockEdges = mockEdges.filter((edge: any) => edge.graphId === resolvedParams.id)
     
     return NextResponse.json({
       graph: mockGraph,
       nodes: graphMockNodes,
-      edges: [],
+      edges: graphMockEdges,
     })
   }
   
@@ -76,10 +79,16 @@ export async function GET(
       createdAt: new Date().toISOString(),
     }
     
+    // Get mock data
+    const mockNodes = global.mockNodes || []
+    const mockEdges = global.mockEdges || []
+    const graphMockNodes = mockNodes.filter((node: any) => node.graphId === resolvedParams.id)
+    const graphMockEdges = mockEdges.filter((edge: any) => edge.graphId === resolvedParams.id)
+    
     return NextResponse.json({
       graph: mockGraph,
-      nodes: [],
-      edges: [],
+      nodes: graphMockNodes,
+      edges: graphMockEdges,
     })
   }
 }

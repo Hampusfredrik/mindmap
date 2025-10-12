@@ -20,10 +20,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 
-// Simple custom node component
-function CustomNode({ data, id }: { data: any; id: string }) {
+// Enhanced custom node component with selection state
+function CustomNode({ data, id, selected }: { data: any; id: string; selected?: boolean }) {
   return (
-    <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-stone-400 cursor-pointer hover:border-blue-500">
+    <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 cursor-pointer transition-colors ${
+      selected 
+        ? 'border-blue-500 bg-blue-50' 
+        : 'border-stone-400 hover:border-blue-400'
+    }`}>
       <div className="font-bold">{data.label}</div>
       {data.detail && (
         <div className="text-xs text-gray-500 mt-1">{data.detail}</div>
@@ -95,7 +99,19 @@ interface SimpleEdge {
 function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
   const queryClient = useQueryClient()
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [performanceMode, setPerformanceMode] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const { fitView } = useReactFlow()
+
+  // Detect mobile and performance mode
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Fetch graph data
   const { data: graphData, isLoading, error } = useQuery<GraphData>({
@@ -156,6 +172,14 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     setEdges(initialEdges)
   }, [initialEdges, setEdges])
 
+  // Performance mode detection
+  useEffect(() => {
+    setPerformanceMode(nodes.length > 50 || edges.length > 100)
+  }, [nodes.length, edges.length])
+
+  // Mobile read-only mode
+  const [isEditingEnabled, setIsEditingEnabled] = useState(!isMobile)
+
   // Simple mutation for creating nodes (for testing)
   const createNodeMutation = useMutation({
     mutationFn: async (data: { x: number; y: number; title: string }) => {
@@ -183,20 +207,59 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     },
   })
 
+  // Edge creation mutation
+  const createEdgeMutation = useMutation({
+    mutationFn: async (data: { sourceNodeId: string; targetNodeId: string }) => {
+      const response = await fetch("/api/edges", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          graphId,
+          sourceNodeId: data.sourceNodeId,
+          targetNodeId: data.targetNodeId,
+        }),
+      })
+      if (!response.ok) throw new Error("Failed to create edge")
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      toast.success("Connection created")
+      setSelectedNode(null)
+    },
+    onError: () => {
+      toast.error("Failed to create connection")
+    },
+  })
+
   // React Flow event handlers
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    if (!isEditingEnabled) return // Read-only mode
+
     if (selectedNode === node.id) {
+      // Second click on same node - deselect
       setSelectedNode(null)
+    } else if (selectedNode) {
+      // Second click on different node - create edge
+      createEdgeMutation.mutate({
+        sourceNodeId: selectedNode,
+        targetNodeId: node.id,
+      })
     } else {
+      // First click - select node
       setSelectedNode(node.id)
     }
-  }, [selectedNode])
+  }, [selectedNode, createEdgeMutation, isEditingEnabled])
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null)
   }, [])
 
   const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    if (!isEditingEnabled) return // Read-only mode
+
     // Add new node near double-clicked node
     const newNodeX = node.position.x + 200
     const newNodeY = node.position.y
@@ -206,12 +269,36 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       y: newNodeY,
       title: "New Node",
     })
-  }, [createNodeMutation])
+  }, [createNodeMutation, isEditingEnabled])
+
+  // Node position update mutation
+  const updateNodePositionMutation = useMutation({
+    mutationFn: async (data: { id: string; x: number; y: number; updatedAt: string }) => {
+      const response = await fetch(`/api/nodes/${data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) throw new Error("Failed to update node position")
+      return response.json()
+    },
+    onError: () => {
+      toast.error("Failed to save node position")
+    },
+  })
 
   const onNodeDragStop = useCallback((_event: React.MouseEvent, node: Node) => {
-    // TODO: Update node position in database
-    console.log("Node dragged to:", node.position)
-  }, [])
+    // Update node position in database
+    const nodeData = nodes.find(n => n.id === node.id)?.data
+    if (nodeData?.updatedAt) {
+      updateNodePositionMutation.mutate({
+        id: node.id,
+        x: node.position.x,
+        y: node.position.y,
+        updatedAt: nodeData.updatedAt,
+      })
+    }
+  }, [nodes, updateNodePositionMutation])
 
   // Simple function to add a test node
   const addTestNode = () => {
@@ -257,17 +344,38 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   return (
     <div className="h-full w-full relative">
+      {/* Mobile editing toggle */}
+      {isMobile && (
+        <div className="absolute top-4 left-4 right-4 z-20 bg-white rounded-lg shadow-lg p-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">
+              {isEditingEnabled ? "Editing Mode" : "Read-Only Mode"}
+            </span>
+            <Button
+              onClick={() => setIsEditingEnabled(!isEditingEnabled)}
+              size="sm"
+              variant={isEditingEnabled ? "destructive" : "default"}
+            >
+              {isEditingEnabled ? "Disable Editing" : "Enable Editing"}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header with controls */}
-      <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg p-4">
+      <div className={`absolute z-10 bg-white rounded-lg shadow-lg p-4 ${
+        isMobile ? 'top-20 left-4 right-4' : 'top-4 left-4'
+      }`}>
         <h2 className="text-lg font-bold mb-2">Mindmap Editor</h2>
         <div className="text-sm text-gray-600 space-y-1">
           <p>Title: {graphData.graph.title}</p>
           <p>Nodes: {nodes.length}</p>
           <p>Edges: {edges.length}</p>
+          {performanceMode && <p className="text-orange-600 font-medium">Performance Mode</p>}
         </div>
         <Button 
           onClick={addTestNode}
-          disabled={createNodeMutation.isPending}
+          disabled={createNodeMutation.isPending || !isEditingEnabled}
           className="mt-3 w-full"
           size="sm"
         >
@@ -289,20 +397,40 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         edgeTypes={edgeTypes}
         fitView
         attributionPosition="bottom-left"
+        nodesDraggable={isEditingEnabled}
+        nodesConnectable={isEditingEnabled}
+        elementsSelectable={isEditingEnabled}
+        defaultEdgeOptions={{
+          type: performanceMode ? 'straight' : 'smoothstep',
+          animated: !performanceMode,
+          style: performanceMode ? { strokeWidth: 1 } : { strokeWidth: 2 },
+        }}
       >
         <Background />
         <Controls />
-        <MiniMap />
+        {!performanceMode && <MiniMap />}
       </ReactFlow>
 
       {/* Instructions */}
-      <div className="absolute bottom-4 left-4 z-10 bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-sm">
+      <div className={`absolute z-10 bg-blue-50 border border-blue-200 rounded-lg p-3 ${
+        isMobile ? 'bottom-4 left-4 right-4' : 'bottom-4 left-4 max-w-sm'
+      }`}>
         <p className="text-blue-800 text-sm">
           <strong>Interactive Mindmap</strong><br/>
-          • Click to select nodes<br/>
-          • Double-click to add new nodes<br/>
-          • Drag to move nodes<br/>
-          • Use controls to zoom/pan
+          {isEditingEnabled ? (
+            <>
+              • Click to select nodes<br/>
+              • Click two nodes to connect<br/>
+              • Double-click to add nodes<br/>
+              • Drag to move nodes
+            </>
+          ) : (
+            <>
+              • View-only mode<br/>
+              • Use controls to zoom/pan<br/>
+              • Enable editing to modify
+            </>
+          )}
         </p>
       </div>
     </div>
