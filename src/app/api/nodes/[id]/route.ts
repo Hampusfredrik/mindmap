@@ -135,33 +135,60 @@ export async function DELETE(
     return session
   }
   
-  // Get the node to verify ownership through graph
   const resolvedParams = await params
-  const existingNode = await db
-    .select({
-      node: nodes,
-      graph: graphs,
-    })
-    .from(nodes)
-    .innerJoin(graphs, eq(nodes.graphId, graphs.id))
-    .where(eq(nodes.id, resolvedParams.id))
-    .limit(1)
   
-  if (existingNode.length === 0) {
-    return NextResponse.json(
-      { error: "Node not found" },
-      { status: 404 }
-    )
+  // Handle mock nodes
+  if (resolvedParams.id.startsWith('mock-node-')) {
+    if (!global.mockNodes) {
+      global.mockNodes = []
+    }
+    
+    const nodeIndex = global.mockNodes.findIndex((node: any) => node.id === resolvedParams.id)
+    if (nodeIndex === -1) {
+      return NextResponse.json(
+        { error: "Node not found" },
+        { status: 404 }
+      )
+    }
+    
+    global.mockNodes.splice(nodeIndex, 1)
+    return NextResponse.json({ success: true })
   }
   
-  if (existingNode[0].graph.userId !== session.user!.id!) {
+  try {
+    // Get the node to verify ownership through graph
+    const existingNode = await db
+      .select({
+        node: nodes,
+        graph: graphs,
+      })
+      .from(nodes)
+      .innerJoin(graphs, eq(nodes.graphId, graphs.id))
+      .where(eq(nodes.id, resolvedParams.id))
+      .limit(1)
+    
+    if (existingNode.length === 0) {
+      return NextResponse.json(
+        { error: "Node not found" },
+        { status: 404 }
+      )
+    }
+    
+    if (existingNode[0].graph.userId !== session.user!.id!) {
+      return NextResponse.json(
+        { error: "Access denied" },
+        { status: 403 }
+      )
+    }
+    
+    await db.delete(nodes).where(eq(nodes.id, resolvedParams.id))
+    
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting node:", error)
     return NextResponse.json(
-      { error: "Access denied" },
-      { status: 403 }
+      { error: "Internal server error" },
+      { status: 500 }
     )
   }
-  
-  await db.delete(nodes).where(eq(nodes.id, resolvedParams.id))
-  
-  return NextResponse.json({ success: true })
 }
