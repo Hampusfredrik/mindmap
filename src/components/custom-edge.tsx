@@ -1,11 +1,11 @@
 "use client"
 
-import { useCallback, useState, useMemo } from "react"
+import { useCallback, useState, useMemo, useEffect } from "react"
 import { EdgeProps, getBezierPath, EdgeLabelRenderer } from "reactflow"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import debounce from "lodash/debounce"
 
@@ -19,8 +19,15 @@ export function CustomEdge({
   targetPosition,
   data,
 }: EdgeProps) {
+  const queryClient = useQueryClient()
+  const graphId = data?.graphId
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [detail, setDetail] = useState(data?.detail || "")
+
+  // Sync local state with props when they change
+  useEffect(() => {
+    setDetail(data?.detail || "")
+  }, [data?.detail])
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -49,7 +56,13 @@ export function CustomEdge({
       }
       return response.json()
     },
-    onError: (error) => {
+    onSuccess: () => {
+      if (graphId) {
+        queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      }
+      toast.success("Connection updated")
+    },
+    onError: (error: Error) => {
       if (error.message === "CONCURRENT_MODIFICATION") {
         toast.error("Other changes detected. Please reload and try again.")
       } else {

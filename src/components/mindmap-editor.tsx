@@ -147,12 +147,13 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       source: edge.sourceNodeId,
       target: edge.targetNodeId,
       type: "default",
-      data: {
-        detail: edge.detail,
-        updatedAt: edge.updatedAt,
-      },
-    }))
-  }, [graphData?.edges])
+        data: {
+          detail: edge.detail,
+          updatedAt: edge.updatedAt,
+          graphId: graphId,
+        },
+      }))
+    }, [graphData?.edges, graphId])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
