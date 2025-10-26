@@ -160,10 +160,12 @@ export function CustomNode({ data, id, selected }: NodeProps) {
       </div>
       
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-[400px] sm:w-[540px]">
+        <SheetContent className="w-[400px] sm:w-[540px]" aria-describedby="edit-node-description">
           <SheetHeader>
             <SheetTitle>Edit Node</SheetTitle>
-            <p className="text-sm text-gray-500">Changes are saved automatically</p>
+            <p className="text-sm text-gray-500" id="edit-node-description">
+              Changes are saved automatically
+            </p>
           </SheetHeader>
           
           <div className="space-y-4 mt-6">

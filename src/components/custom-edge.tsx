@@ -109,9 +109,12 @@ export function CustomEdge({
       </EdgeLabelRenderer>
       
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-[400px] sm:w-[540px]">
+        <SheetContent className="w-[400px] sm:w-[540px]" aria-describedby="edit-connection-description">
           <SheetHeader>
             <SheetTitle>Edit Connection</SheetTitle>
+            <p className="text-sm text-gray-500" id="edit-connection-description">
+              Changes are saved automatically
+            </p>
           </SheetHeader>
           
           <div className="space-y-4 mt-6">

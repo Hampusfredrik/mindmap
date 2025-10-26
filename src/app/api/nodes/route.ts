@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     } catch (dbError) {
       console.warn("Database not available, returning mock node:", dbError)
       
-      // Return a mock node
+      // Return a mock node and store it in global memory
       const mockNode = {
         id: `mock-node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         graphId,
@@ -77,6 +77,12 @@ export async function POST(request: NextRequest) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
+      
+      // Store mock node in global memory
+      if (!global.mockNodes) {
+        global.mockNodes = []
+      }
+      global.mockNodes.push(mockNode)
       
       return NextResponse.json(mockNode)
     }
