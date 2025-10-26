@@ -33,13 +33,13 @@ function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: stri
     setEditTitle(data.label)
   }, [data.label])
 
-  const handleTitleClick = (e: React.MouseEvent) => {
+  const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     setIsEditing(true)
   }
 
   const handleTitleSubmit = () => {
-    if (onUpdateTitle && editTitle !== data.label) {
+    if (onUpdateTitle && editTitle !== data.label && editTitle.trim() !== '') {
       onUpdateTitle(id, editTitle, data.updatedAt)
     }
     setIsEditing(false)
@@ -54,6 +54,14 @@ function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: stri
     }
   }
 
+  const handleInputClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditTitle(e.target.value)
+  }
+
   return (
     <div className={`px-6 py-4 shadow-lg rounded-2xl bg-white border-2 cursor-pointer transition-all duration-200 hover:shadow-xl ${
       selected 
@@ -63,16 +71,17 @@ function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: stri
       {isEditing ? (
         <input
           value={editTitle}
-          onChange={(e) => setEditTitle(e.target.value)}
+          onChange={handleInputChange}
           onBlur={handleTitleSubmit}
           onKeyDown={handleKeyPress}
+          onClick={handleInputClick}
           className="w-full bg-transparent border-none outline-none font-bold text-gray-900 text-center"
           autoFocus
         />
       ) : (
         <div 
           className="font-bold text-gray-900 hover:text-blue-600 transition-colors"
-          onClick={handleTitleClick}
+          onDoubleClick={handleDoubleClick}
         >
           {data.label}
         </div>
