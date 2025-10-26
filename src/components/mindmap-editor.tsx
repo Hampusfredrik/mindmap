@@ -24,9 +24,14 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Textarea } from "@/components/ui/textarea"
 
 // Modern custom node component with selection state and editing
-function CustomNode({ data, id, selected }: { data: any; id: string; selected?: boolean }) {
+function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: string; selected?: boolean; onUpdateTitle?: (id: string, newTitle: string, updatedAt: string) => void }) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(data.label)
+
+  // Sync local state when data.label changes from external updates
+  useEffect(() => {
+    setEditTitle(data.label)
+  }, [data.label])
 
   const handleTitleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -34,8 +39,9 @@ function CustomNode({ data, id, selected }: { data: any; id: string; selected?: 
   }
 
   const handleTitleSubmit = () => {
-    // TODO: Update node title via API
-    data.label = editTitle
+    if (onUpdateTitle && editTitle !== data.label) {
+      onUpdateTitle(id, editTitle, data.updatedAt)
+    }
     setIsEditing(false)
   }
 
@@ -49,7 +55,7 @@ function CustomNode({ data, id, selected }: { data: any; id: string; selected?: 
   }
 
   return (
-    <div className={`px-6 py-4 shadow-lg rounded-xl bg-white border-2 cursor-pointer transition-all duration-200 hover:shadow-xl ${
+    <div className={`px-6 py-4 shadow-lg rounded-2xl bg-white border-2 cursor-pointer transition-all duration-200 hover:shadow-xl ${
       selected 
         ? 'border-blue-500 bg-blue-50 shadow-blue-200' 
         : 'border-gray-200 hover:border-blue-300'
@@ -90,35 +96,14 @@ function CustomEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, ta
   })
 
   return (
-    <>
-      <path
-        id={id}
-        style={style}
-        className="react-flow__edge-path"
-        d={edgePath}
-        markerEnd="url(#arrowhead)"
-      />
-      <defs>
-        <marker
-          id="arrowhead"
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill="#64748b"
-          />
-        </marker>
-      </defs>
-    </>
+    <path
+      id={id}
+      style={style}
+      className="react-flow__edge-path stroke-2"
+      d={edgePath}
+      markerEnd="url(#arrowclosed)"
+    />
   )
-}
-
-const nodeTypes: NodeTypes = {
-  default: CustomNode,
 }
 
 const edgeTypes: EdgeTypes = {
@@ -348,6 +333,26 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     setSelectedNode(null)
   }, [])
 
+  // Node title update mutation
+  const updateNodeTitleMutation = useMutation({
+    mutationFn: async (data: { id: string; title: string; updatedAt: string }) => {
+      const response = await fetch(`/api/nodes/${data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) throw new Error("Failed to update node title")
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      toast.success("Node title updated")
+    },
+    onError: () => {
+      toast.error("Failed to update node title")
+    },
+  })
+
   // Node detail update mutation
   const updateNodeDetailMutation = useMutation({
     mutationFn: async (data: { id: string; detail: string; updatedAt: string }) => {
@@ -396,6 +401,18 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       })
     }
   }, [nodes, updateNodePositionMutation])
+
+  // Define node types with update callback
+  const nodeTypes: NodeTypes = useMemo(() => ({
+    default: (props: any) => (
+      <CustomNode 
+        {...props} 
+        onUpdateTitle={(id, newTitle, updatedAt) => {
+          updateNodeTitleMutation.mutate({ id, title: newTitle, updatedAt })
+        }}
+      />
+    ),
+  }), [updateNodeTitleMutation])
 
   // Simple function to add a test node
   const addTestNode = () => {
@@ -510,6 +527,11 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
           style: performanceMode ? { strokeWidth: 1 } : { strokeWidth: 2 },
         }}
       >
+        <defs>
+          <marker id="arrowclosed" type="closed" markerWidth="10" markerHeight="10" refX="9" refY="5">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" />
+          </marker>
+        </defs>
         <Background />
         <Controls />
         {!performanceMode && <MiniMap />}
