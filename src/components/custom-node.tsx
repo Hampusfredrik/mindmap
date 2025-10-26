@@ -38,11 +38,16 @@ export function CustomNode({ data, id, selected }: NodeProps) {
       return response.json()
     },
     onSuccess: (_, variables) => {
-      // Only show toast for title updates, not detail updates (which happen as you type)
-      if (variables.title) {
+      // For mock nodes, don't invalidate query to prevent disappearing
+      const isMockNode = id.startsWith('mock-node-')
+      
+      if (variables.title && !isMockNode) {
         if (graphId) {
           queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
         }
+        toast.success("Node updated")
+      } else if (variables.title && isMockNode) {
+        // Just show success toast for mock nodes without invalidating
         toast.success("Node updated")
       }
       // Detail updates are silent to avoid constant notifications
