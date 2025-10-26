@@ -308,8 +308,8 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
           const sourceY = sourceNode.position.y
           const isTargetBelow = targetY > sourceY
           
-          const sourceHandle = isTargetBelow ? 'bottom' : 'top'
-          const targetHandle = isTargetBelow ? 'top' : 'bottom'
+          const sourceHandle = isTargetBelow ? 'source-bottom' : 'source-top'
+          const targetHandle = isTargetBelow ? 'target-top' : 'target-bottom'
 
           createEdgeMutation.mutate({
             sourceNodeId: selectedNode,
@@ -355,8 +355,8 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     // If target is ABOVE source (targetY < sourceY): use top handle for source, bottom handle for target
     const isTargetBelow = targetY > sourceY
     
-    const sourceHandle = isTargetBelow ? 'bottom' : 'top'
-    const targetHandle = isTargetBelow ? 'top' : 'bottom'
+    const sourceHandle = isTargetBelow ? 'source-bottom' : 'source-top'
+    const targetHandle = isTargetBelow ? 'target-top' : 'target-bottom'
 
     createEdgeMutation.mutate({
       sourceNodeId: connection.source,
