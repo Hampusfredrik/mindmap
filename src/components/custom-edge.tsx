@@ -60,7 +60,8 @@ export function CustomEdge({
       if (graphId) {
         queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
       }
-      toast.success("Connection updated")
+      toast.success("Connection details saved")
+      setIsSheetOpen(false)
     },
     onError: (error: Error) => {
       if (error.message === "CONCURRENT_MODIFICATION") {
@@ -71,18 +72,14 @@ export function CustomEdge({
     },
   })
 
-  // Debounced update for detail
-  const debouncedUpdateDetail = useMemo(
-    () => debounce((newDetail: string) => {
-      updateEdgeMutation.mutate({ detail: newDetail })
-    }, 500),
-    [updateEdgeMutation]
-  )
-
-  const handleDetailChange = useCallback((newDetail: string) => {
-    setDetail(newDetail)
-    debouncedUpdateDetail(newDetail)
-  }, [debouncedUpdateDetail])
+  // Save detail manually
+  const handleSave = useCallback(() => {
+    if (detail !== data?.detail) {
+      updateEdgeMutation.mutate({ detail })
+    } else {
+      setIsSheetOpen(false)
+    }
+  }, [detail, data?.detail, updateEdgeMutation])
 
   return (
     <>
@@ -113,7 +110,7 @@ export function CustomEdge({
           <SheetHeader>
             <SheetTitle>Edit Connection</SheetTitle>
             <p className="text-sm text-gray-500" id="edit-connection-description">
-              Changes are saved automatically
+              Add details about this connection
             </p>
           </SheetHeader>
           
@@ -122,18 +119,28 @@ export function CustomEdge({
               <label className="text-sm font-medium">Detail</label>
               <Textarea
                 value={detail}
-                onChange={(e) => handleDetailChange(e.target.value)}
+                onChange={(e) => setDetail(e.target.value)}
                 placeholder="Add details about this connection..."
                 className="min-h-[200px]"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Changes are saved automatically
-              </p>
             </div>
             
-            <Button onClick={() => setIsSheetOpen(false)} className="w-full">
-              Close
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSave}
+                disabled={updateEdgeMutation.isPending}
+                className="flex-1"
+              >
+                {updateEdgeMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setIsSheetOpen(false)}
+                disabled={updateEdgeMutation.isPending}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
