@@ -10,7 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import debounce from "lodash/debounce"
 
-export function CustomNode({ data, id }: NodeProps) {
+export function CustomNode({ data, id, selected }: NodeProps) {
   const queryClient = useQueryClient()
   const graphId = data.graphId
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -116,7 +116,11 @@ export function CustomNode({ data, id }: NodeProps) {
   return (
     <>
       <div 
-        className="px-6 py-4 shadow-lg rounded-lg bg-blue-600 border-2 border-blue-500 hover:border-blue-400 transition-all duration-200 relative group"
+        className={`px-6 py-4 shadow-lg rounded-lg bg-blue-600 border-2 transition-all duration-200 relative group ${
+          selected 
+            ? 'border-yellow-400 ring-2 ring-yellow-400 ring-offset-2 ring-offset-gray-800 scale-105' 
+            : 'border-blue-500 hover:border-blue-400'
+        }`}
       >
         <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-400" />
         

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import ReactFlow, {
   Node,
   Edge,
@@ -14,7 +14,6 @@ import ReactFlow, {
   EdgeTypes,
   ReactFlowProvider,
   useReactFlow,
-  getBezierPath,
 } from "reactflow"
 import "reactflow/dist/style.css"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -22,115 +21,9 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
-
-// Modern custom node component with selection state and editing
-function CustomNode({ data, id, selected }: { data: any; id: string; selected?: boolean }) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editTitle, setEditTitle] = useState(data.label)
-
-  const handleTitleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIsEditing(true)
-  }
-
-  const handleTitleSubmit = () => {
-    // TODO: Update node title via API
-    data.label = editTitle
-    setIsEditing(false)
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleTitleSubmit()
-    } else if (e.key === 'Escape') {
-      setEditTitle(data.label)
-      setIsEditing(false)
-    }
-  }
-
-  // Determine node type based on title or data
-  type NodeType = 'start' | 'end' | 'agent' | 'guardrail' | 'default'
-  const nodeType: NodeType = (data.type || 'default') as NodeType
-  
-  // Color schemes for different node types
-  const nodeColors: Record<NodeType, string> = {
-    start: 'bg-teal-600 border-teal-500',
-    end: 'bg-teal-600 border-teal-500',
-    agent: 'bg-blue-600 border-blue-500',
-    guardrail: 'bg-gray-700 border-gray-600',
-    default: 'bg-blue-600 border-blue-500',
-  }
-  
-  const colorClass = nodeColors[nodeType]
-
-  return (
-    <div className={`px-6 py-4 shadow-lg rounded-lg ${colorClass} cursor-pointer transition-all duration-200 hover:scale-105 ${
-      selected 
-        ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-800' 
-        : ''
-    }`}>
-      {isEditing ? (
-        <input
-          value={editTitle}
-          onChange={(e) => setEditTitle(e.target.value)}
-          onBlur={handleTitleSubmit}
-          onKeyDown={handleKeyPress}
-          className="w-full bg-transparent border-none outline-none font-semibold text-white text-center"
-          autoFocus
-        />
-      ) : (
-        <div 
-          className="font-semibold text-white transition-colors text-center"
-          onClick={handleTitleClick}
-        >
-          {data.label}
-        </div>
-      )}
-      {data.detail && (
-        <div className="text-xs text-white/80 mt-2 text-center">{data.detail}</div>
-      )}
-    </div>
-  )
-}
-
-// Custom edge component with arrows
-function CustomEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, selected }: any) {
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  })
-
-  return (
-    <>
-      <path
-        id={id}
-        style={{ ...style, stroke: '#9ca3af', strokeWidth: 2 }}
-        className="react-flow__edge-path"
-        d={edgePath}
-        markerEnd="url(#arrowhead)"
-      />
-      <defs>
-        <marker
-          id="arrowhead"
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill="#9ca3af"
-          />
-        </marker>
-      </defs>
-    </>
-  )
-}
+import { CustomNode } from "./custom-node"
+import { CustomEdge } from "./custom-edge"
+import { X, Plus } from "lucide-react"
 
 const nodeTypes: NodeTypes = {
   default: CustomNode,
@@ -335,6 +228,9 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     },
   })
 
+  // Track if we're in connection mode
+  const [isConnecting, setIsConnecting] = useState(false)
+
   // React Flow event handlers
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     if (!isEditingEnabled) {
@@ -344,24 +240,26 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       return
     }
 
-    if (selectedNode === node.id) {
-      // Second click on same node - open detail sheet
+    // Prevent node click from interfering with inline editing
+    // Nodes handle their own editing now
+    if (!isConnecting) {
+      setSelectedNode(node.id)
+      setIsConnecting(true)
       setSelectedNodeData(node.data)
-      setDetailSheetOpen(true)
-    } else if (selectedNode) {
+    } else if (selectedNode && selectedNode !== node.id) {
       // Second click on different node - create edge
       createEdgeMutation.mutate({
         sourceNodeId: selectedNode,
         targetNodeId: node.id,
       })
-    } else {
-      // First click - select node
-      setSelectedNode(node.id)
+      setIsConnecting(false)
+      setSelectedNode(null)
     }
-  }, [selectedNode, createEdgeMutation, isEditingEnabled])
+  }, [selectedNode, createEdgeMutation, isEditingEnabled, isConnecting])
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null)
+    setIsConnecting(false)
   }, [])
 
   // Node detail update mutation
@@ -413,14 +311,76 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     }
   }, [nodes, updateNodePositionMutation])
 
+  // Delete node mutation
+  const deleteNodeMutation = useMutation({
+    mutationFn: async (nodeId: string) => {
+      const response = await fetch(`/api/nodes/${nodeId}`, {
+        method: "DELETE",
+      })
+      if (!response.ok) throw new Error("Failed to delete node")
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      toast.success("Node deleted")
+      setSelectedNode(null)
+    },
+    onError: () => {
+      toast.error("Failed to delete node")
+    },
+  })
+
+  // Delete edge mutation
+  const deleteEdgeMutation = useMutation({
+    mutationFn: async (edgeId: string) => {
+      const response = await fetch(`/api/edges/${edgeId}`, {
+        method: "DELETE",
+      })
+      if (!response.ok) throw new Error("Failed to delete connection")
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      toast.success("Connection deleted")
+    },
+    onError: () => {
+      toast.error("Failed to delete connection")
+    },
+  })
+
   // Simple function to add a test node
   const addTestNode = () => {
     createNodeMutation.mutate({
       x: Math.random() * 400 + 100,
       y: Math.random() * 300 + 100,
-      title: "Test Node " + (nodes.length + 1),
+      title: "New Node " + (nodes.length + 1),
     })
   }
+
+  // Delete selected node
+  const handleDeleteNode = () => {
+    if (selectedNode) {
+      deleteNodeMutation.mutate(selectedNode)
+    }
+  }
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedNode && isEditingEnabled) {
+          e.preventDefault()
+          handleDeleteNode()
+        }
+      } else if (e.key === 'Escape') {
+        setIsConnecting(false)
+        setSelectedNode(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedNode, isEditingEnabled])
 
   if (isLoading) {
     return (
@@ -485,21 +445,40 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
           <p>Nodes: {nodes.length}</p>
           <p>Edges: {edges.length}</p>
           {performanceMode && <p className="text-orange-400 font-medium">Performance Mode</p>}
+          {isConnecting && <p className="text-blue-400 font-medium">Select target node...</p>}
         </div>
-        <Button 
-          onClick={addTestNode}
-          disabled={createNodeMutation.isPending || !isEditingEnabled}
-          className="mt-3 w-full"
-          size="sm"
-        >
-          {createNodeMutation.isPending ? "Creating..." : "Add Node"}
-        </Button>
+        
+        <div className="mt-3 space-y-2">
+          <Button 
+            onClick={addTestNode}
+            disabled={createNodeMutation.isPending || !isEditingEnabled}
+            className="w-full"
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {createNodeMutation.isPending ? "Creating..." : "Add Node"}
+          </Button>
+          
+          {selectedNode && isEditingEnabled && (
+            <Button 
+              onClick={handleDeleteNode}
+              disabled={deleteNodeMutation.isPending}
+              variant="destructive"
+              className="w-full"
+              size="sm"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Delete Node (Del)
+            </Button>
+          )}
+        </div>
         
         {/* Connection instructions */}
         {isEditingEnabled && (
           <div className="mt-3 text-xs text-gray-400">
-            <p><strong>To connect:</strong> Click first node, then second node</p>
-            <p><strong>To edit:</strong> Click selected node again</p>
+            <p><strong>To connect:</strong> Click node, then another</p>
+            <p><strong>To delete:</strong> Select node and press Del</p>
+            <p><strong>To cancel:</strong> Press Esc</p>
           </div>
         )}
       </div>
