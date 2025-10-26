@@ -567,6 +567,14 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
+        fitViewOptions={{ 
+          padding: 0.2,
+          maxZoom: 1.5,
+          minZoom: 0.3
+        }}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.5 }}
+        minZoom={0.3}
+        maxZoom={2}
         attributionPosition="bottom-left"
         nodesDraggable={isEditingEnabled}
         nodesConnectable={isEditingEnabled}
