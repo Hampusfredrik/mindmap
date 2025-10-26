@@ -141,7 +141,8 @@ export function CustomNode({ data, id, selected }: NodeProps) {
             : 'bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500'
         }`}
       >
-        <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-400" />
+        <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-400 !z-10" />
+        <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-gray-400 !z-10" />
         
         {isEditing ? (
           <input
@@ -170,8 +171,6 @@ export function CustomNode({ data, id, selected }: NodeProps) {
         >
           ⋮
         </button>
-        
-        <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-gray-400" />
       </div>
       
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

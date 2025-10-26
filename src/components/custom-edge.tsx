@@ -83,10 +83,23 @@ export function CustomEdge({
 
   return (
     <>
+      <defs>
+        <marker
+          id={`arrow-${id}`}
+          markerWidth="12"
+          markerHeight="12"
+          refX="8"
+          refY="3"
+          orient="auto"
+          markerUnits="strokeWidth"
+        >
+          <path d="M0,0 L0,6 L9,3 z" fill="#9ca3af" className="hover:fill-blue-400" />
+        </marker>
+      </defs>
       <path
         id={id}
         className="react-flow__edge-path stroke-2 hover:stroke-blue-400 cursor-pointer"
-        style={{ stroke: '#9ca3af' }}
+        style={{ stroke: '#9ca3af', markerEnd: `url(#arrow-${id})` }}
         d={edgePath}
         onClick={() => setIsSheetOpen(true)}
       />
