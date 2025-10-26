@@ -38,11 +38,11 @@ export function AppHeader({ user }: AppHeaderProps) {
   }
   
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+    <header className="fixed top-0 left-0 right-0 bg-gray-800 border-b border-gray-700 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="text-xl font-semibold text-white">
               Mindmap App
             </h1>
           </div>
@@ -61,7 +61,7 @@ export function AppHeader({ user }: AppHeaderProps) {
                   className="h-8 w-8 rounded-full"
                 />
               )}
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-300">
                 {user.name || user.email}
               </span>
               <Button

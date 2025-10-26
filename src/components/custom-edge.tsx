@@ -75,7 +75,8 @@ export function CustomEdge({
     <>
       <path
         id={id}
-        className="react-flow__edge-path stroke-2 stroke-gray-400 hover:stroke-blue-500 cursor-pointer"
+        className="react-flow__edge-path stroke-2 hover:stroke-blue-400 cursor-pointer"
+        style={{ stroke: '#9ca3af' }}
         d={edgePath}
         onClick={() => setIsSheetOpen(true)}
       />
@@ -87,10 +88,10 @@ export function CustomEdge({
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: "all",
           }}
-          className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm cursor-pointer hover:border-blue-500"
+          className="px-2 py-1 bg-gray-800 border border-gray-600 rounded shadow-sm cursor-pointer hover:border-blue-500"
           onClick={() => setIsSheetOpen(true)}
         >
-          {data?.detail ? "📝" : "✏️"}
+          <span className="text-white">{data?.detail ? "📝" : "✏️"}</span>
         </div>
       </EdgeLabelRenderer>
       

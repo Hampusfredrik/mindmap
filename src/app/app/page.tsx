@@ -29,7 +29,7 @@ export default function AppPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
-          <div className="text-lg">Loading your mindmaps...</div>
+          <div className="text-lg text-white">Loading your mindmaps...</div>
         </div>
       </div>
     )
@@ -38,10 +38,10 @@ export default function AppPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-white mb-2">
           Your Mindmaps
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-300">
           Create and manage your interactive mindmaps
         </p>
       </div>
@@ -63,10 +63,10 @@ export default function AppPage() {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-white mb-2">
             No mindmaps yet
           </h3>
-          <p className="text-gray-500 mb-6">
+          <p className="text-gray-400 mb-6">
             Get started by creating your first mindmap
           </p>
           <button
@@ -104,12 +104,12 @@ export default function AppPage() {
             <Link
               key={graph.id}
               href={`/app/${graph.id}`}
-              className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200 p-6"
+              className="block bg-gray-800 rounded-lg shadow hover:bg-gray-700 border border-gray-700 transition-all duration-200 p-6"
             >
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-white mb-2">
                 {graph.title}
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-400">
                 Created {new Date(graph.createdAt).toLocaleDateString()}
               </p>
             </Link>

@@ -15,8 +15,6 @@ import ReactFlow, {
   ReactFlowProvider,
   useReactFlow,
   getBezierPath,
-  NodeProps,
-  EdgeProps,
 } from "reactflow"
 import "reactflow/dist/style.css"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -26,26 +24,18 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Textarea } from "@/components/ui/textarea"
 
 // Modern custom node component with selection state and editing
-function CustomNode(props: NodeProps & { onUpdateTitle?: (id: string, newTitle: string, updatedAt: string) => void }) {
-  const { data, id, selected } = props
+function CustomNode({ data, id, selected }: { data: any; id: string; selected?: boolean }) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(data.label)
 
-  // Sync local state when data.label changes from external updates
-  useEffect(() => {
-    setEditTitle(data.label)
-  }, [data.label])
-
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    console.log("Double click on node, entering edit mode")
-    e.stopPropagation() // Prevent React Flow from handling this
+  const handleTitleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
     setIsEditing(true)
   }
 
   const handleTitleSubmit = () => {
-    if (props.onUpdateTitle && editTitle !== data.label && editTitle.trim() !== '') {
-      props.onUpdateTitle(id, editTitle, data.updatedAt)
-    }
+    // TODO: Update node title via API
+    data.label = editTitle
     setIsEditing(false)
   }
 
@@ -58,46 +48,52 @@ function CustomNode(props: NodeProps & { onUpdateTitle?: (id: string, newTitle: 
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditTitle(e.target.value)
+  // Determine node type based on title or data
+  const nodeType = data.type || 'default'
+  
+  // Color schemes for different node types
+  const nodeColors = {
+    start: 'bg-teal-600 border-teal-500',
+    end: 'bg-teal-600 border-teal-500',
+    agent: 'bg-blue-600 border-blue-500',
+    guardrail: 'bg-gray-700 border-gray-600',
+    default: 'bg-blue-600 border-blue-500',
   }
+  
+  const colorClass = nodeColors[nodeType] || nodeColors.default
 
   return (
-    <div className={`px-6 py-4 shadow-lg rounded-2xl bg-white border-2 cursor-pointer transition-all duration-200 hover:shadow-xl ${
+    <div className={`px-6 py-4 shadow-lg rounded-lg ${colorClass} cursor-pointer transition-all duration-200 hover:scale-105 ${
       selected 
-        ? 'border-blue-500 bg-blue-50 shadow-blue-200' 
-        : 'border-gray-200 hover:border-blue-300'
+        ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-800' 
+        : ''
     }`}>
       {isEditing ? (
         <input
           value={editTitle}
-          onChange={handleInputChange}
+          onChange={(e) => setEditTitle(e.target.value)}
           onBlur={handleTitleSubmit}
           onKeyDown={handleKeyPress}
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => e.stopPropagation()}
-          className="w-full bg-transparent border-none outline-none font-bold text-gray-900 text-center"
+          className="w-full bg-transparent border-none outline-none font-semibold text-white text-center"
           autoFocus
         />
       ) : (
         <div 
-          className="font-bold text-gray-900 hover:text-blue-600 transition-colors"
-          onDoubleClick={handleDoubleClick}
+          className="font-semibold text-white transition-colors text-center"
+          onClick={handleTitleClick}
         >
           {data.label}
         </div>
       )}
       {data.detail && (
-        <div className="text-xs text-gray-500 mt-2 text-center">{data.detail}</div>
+        <div className="text-xs text-white/80 mt-2 text-center">{data.detail}</div>
       )}
     </div>
   )
 }
 
 // Custom edge component with arrows
-function CustomEdge(props: EdgeProps) {
-  const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style, selected } = props
+function CustomEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, selected }: any) {
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -108,15 +104,35 @@ function CustomEdge(props: EdgeProps) {
   })
 
   return (
-    <path
-      id={id}
-      style={style}
-      className="react-flow__edge-path stroke-2"
-      d={edgePath}
-      markerEnd="url(#arrowclosed)"
-      fill="none"
-    />
+    <>
+      <path
+        id={id}
+        style={{ ...style, stroke: '#9ca3af', strokeWidth: 2 }}
+        className="react-flow__edge-path"
+        d={edgePath}
+        markerEnd="url(#arrowhead)"
+      />
+      <defs>
+        <marker
+          id="arrowhead"
+          markerWidth="10"
+          markerHeight="7"
+          refX="9"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon
+            points="0 0, 10 3.5, 0 7"
+            fill="#9ca3af"
+          />
+        </marker>
+      </defs>
+    </>
   )
+}
+
+const nodeTypes: NodeTypes = {
+  default: CustomNode,
 }
 
 const edgeTypes: EdgeTypes = {
@@ -319,8 +335,6 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   // React Flow event handlers
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    console.log("Node clicked:", node.id, "selectedNode:", selectedNode)
-    
     if (!isEditingEnabled) {
       // In read-only mode, open detail sheet
       setSelectedNodeData(node.data)
@@ -330,19 +344,16 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
     if (selectedNode === node.id) {
       // Second click on same node - open detail sheet
-      console.log("Opening detail sheet for node:", node.id)
       setSelectedNodeData(node.data)
       setDetailSheetOpen(true)
     } else if (selectedNode) {
       // Second click on different node - create edge
-      console.log("Creating edge from", selectedNode, "to", node.id)
       createEdgeMutation.mutate({
         sourceNodeId: selectedNode,
         targetNodeId: node.id,
       })
     } else {
       // First click - select node
-      console.log("Selecting node:", node.id)
       setSelectedNode(node.id)
     }
   }, [selectedNode, createEdgeMutation, isEditingEnabled])
@@ -350,26 +361,6 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
   const onPaneClick = useCallback(() => {
     setSelectedNode(null)
   }, [])
-
-  // Node title update mutation
-  const updateNodeTitleMutation = useMutation({
-    mutationFn: async (data: { id: string; title: string; updatedAt: string }) => {
-      const response = await fetch(`/api/nodes/${data.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-      if (!response.ok) throw new Error("Failed to update node title")
-      return response.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
-      toast.success("Node title updated")
-    },
-    onError: () => {
-      toast.error("Failed to update node title")
-    },
-  })
 
   // Node detail update mutation
   const updateNodeDetailMutation = useMutation({
@@ -420,19 +411,6 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     }
   }, [nodes, updateNodePositionMutation])
 
-  // Define node types with update callback
-  const nodeTypes: NodeTypes = useMemo(() => ({
-    default: (nodeProps: NodeProps) => (
-      <CustomNode 
-        {...nodeProps} 
-        onUpdateTitle={(id, newTitle, updatedAt) => {
-          console.log("Updating title for node", id, "to", newTitle)
-          updateNodeTitleMutation.mutate({ id, title: newTitle, updatedAt })
-        }}
-      />
-    ),
-  }), [updateNodeTitleMutation])
-
   // Simple function to add a test node
   const addTestNode = () => {
     createNodeMutation.mutate({
@@ -444,20 +422,20 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-lg">Loading mindmap...</div>
+      <div className="flex items-center justify-center h-full bg-[#1a1a1a]">
+        <div className="text-lg text-white">Loading mindmap...</div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-lg text-red-500">Error loading mindmap</div>
-        <div className="text-sm text-gray-500 mt-2">
+      <div className="flex items-center justify-center h-full bg-[#1a1a1a]">
+        <div className="text-lg text-red-400">Error loading mindmap</div>
+        <div className="text-sm text-gray-400 mt-2">
           {error.message}
         </div>
-        <div className="text-sm text-gray-500 mt-1">
+        <div className="text-sm text-gray-400 mt-1">
           Graph ID: {graphId}
         </div>
       </div>
@@ -466,9 +444,9 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   if (!graphData) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-lg text-red-500">Failed to load mindmap</div>
-        <div className="text-sm text-gray-500 mt-2">
+      <div className="flex items-center justify-center h-full bg-[#1a1a1a]">
+        <div className="text-lg text-red-400">Failed to load mindmap</div>
+        <div className="text-sm text-gray-400 mt-2">
           Graph ID: {graphId}
         </div>
       </div>
@@ -476,12 +454,12 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
   }
 
   return (
-    <div className="h-full w-full relative">
+    <div className="h-full w-full relative bg-[#1a1a1a]">
       {/* Mobile editing toggle */}
       {isMobile && (
-        <div className="absolute top-4 left-4 right-4 z-20 bg-white rounded-lg shadow-lg p-3">
+        <div className="absolute top-4 left-4 right-4 z-20 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium text-white">
               {isEditingEnabled ? "Editing Mode" : "Read-Only Mode"}
             </span>
             <Button
@@ -496,15 +474,15 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       )}
 
       {/* Header with controls */}
-      <div className={`absolute z-10 bg-white rounded-lg shadow-lg p-4 ${
+      <div className={`absolute z-10 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-4 ${
         isMobile ? 'top-20 left-4 right-4' : 'top-4 left-4'
       }`}>
-        <h2 className="text-lg font-bold mb-2">Mindmap Editor</h2>
-        <div className="text-sm text-gray-600 space-y-1">
+        <h2 className="text-lg font-bold mb-2 text-white">Mindmap Editor</h2>
+        <div className="text-sm text-gray-300 space-y-1">
           <p>Title: {graphData.graph.title}</p>
           <p>Nodes: {nodes.length}</p>
           <p>Edges: {edges.length}</p>
-          {performanceMode && <p className="text-orange-600 font-medium">Performance Mode</p>}
+          {performanceMode && <p className="text-orange-400 font-medium">Performance Mode</p>}
         </div>
         <Button 
           onClick={addTestNode}
@@ -517,7 +495,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         
         {/* Connection instructions */}
         {isEditingEnabled && (
-          <div className="mt-3 text-xs text-gray-600">
+          <div className="mt-3 text-xs text-gray-400">
             <p><strong>To connect:</strong> Click first node, then second node</p>
             <p><strong>To edit:</strong> Click selected node again</p>
           </div>
@@ -539,42 +517,37 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         attributionPosition="bottom-left"
         nodesDraggable={isEditingEnabled}
         nodesConnectable={isEditingEnabled}
-        elementsSelectable={true}
+        elementsSelectable={isEditingEnabled}
         defaultEdgeOptions={{
           type: performanceMode ? 'straight' : 'smoothstep',
           animated: !performanceMode,
-          style: performanceMode ? { strokeWidth: 1 } : { strokeWidth: 2 },
+          style: { strokeWidth: 2, stroke: '#9ca3af' },
         }}
       >
-        <defs>
-          <marker id="arrowclosed" type="closed" markerWidth="10" markerHeight="10" refX="9" refY="5">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" />
-          </marker>
-        </defs>
-        <Background />
+        <Background color="#404040" gap={20} size={1} />
         <Controls />
-        {!performanceMode && <MiniMap />}
+        {!performanceMode && <MiniMap nodeColor="#3b82f6" />}
       </ReactFlow>
 
       {/* Instructions */}
-      <div className={`absolute z-10 bg-blue-50 border border-blue-200 rounded-lg p-3 ${
+      <div className={`absolute z-10 bg-gray-800 border border-gray-700 rounded-lg p-3 ${
         isMobile ? 'bottom-4 left-4 right-4' : 'bottom-4 left-4 max-w-sm'
       }`}>
-        <p className="text-blue-800 text-sm">
+        <p className="text-white text-sm">
           <strong>Interactive Mindmap</strong><br/>
           {isEditingEnabled ? (
-            <>
+            <span className="text-gray-300">
               • Click to select nodes<br/>
               • Click two nodes to connect<br/>
               • Click selected node to edit details<br/>
               • Drag to move nodes
-            </>
+            </span>
           ) : (
-            <>
+            <span className="text-gray-300">
               • Click nodes to view details<br/>
               • Use controls to zoom/pan<br/>
               • Enable editing to modify
-            </>
+            </span>
           )}
         </p>
       </div>

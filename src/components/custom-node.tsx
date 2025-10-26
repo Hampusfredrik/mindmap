@@ -69,12 +69,12 @@ export function CustomNode({ data, id }: NodeProps) {
   return (
     <>
       <div 
-        className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-stone-400 cursor-pointer hover:border-blue-500"
+        className="px-6 py-4 shadow-lg rounded-lg bg-blue-600 border-2 border-blue-500 cursor-pointer hover:border-blue-400 transition-all duration-200"
         onClick={() => setIsSheetOpen(true)}
       >
-        <Handle type="target" position={Position.Top} className="w-3 h-3" />
-        <div className="font-bold">{title}</div>
-        <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
+        <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-400" />
+        <div className="font-semibold text-white text-center">{title}</div>
+        <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-gray-400" />
       </div>
       
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

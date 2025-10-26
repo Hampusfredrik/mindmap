@@ -2,8 +2,8 @@
 @import "reactflow/dist/style.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #1a1a1a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -13,15 +13,40 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
+  background: #1a1a1a;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+}
+
+/* Custom dark grid pattern for ReactFlow background */
+.react-flow__background {
+  background-color: #1a1a1a;
+  background-image: 
+    radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.react-flow__controls {
+  background-color: #2a2a2a;
+  border: 1px solid #404040;
+}
+
+.react-flow__controls-button {
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #404040;
+}
+
+.react-flow__controls-button:hover {
+  background-color: #3a3a3a;
+}
+
+.react-flow__controls-button svg {
+  fill: #ededed;
+}
+
+.react-flow__minimap {
+  background-color: #2a2a2a;
+  border: 1px solid #404040;
 }
