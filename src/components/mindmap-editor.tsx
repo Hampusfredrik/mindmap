@@ -23,7 +23,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Textarea } from "@/components/ui/textarea"
 import { CustomNode } from "./custom-node"
 import { CustomEdge } from "./custom-edge"
-import { X, Plus } from "lucide-react"
+import { X, Plus, Link2, Link2Off } from "lucide-react"
 
 const nodeTypes: NodeTypes = {
   default: CustomNode,
@@ -296,20 +296,24 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       return
     }
 
-    // Prevent node click from interfering with inline editing
-    // Nodes handle their own editing now
-    if (!isConnecting) {
+    // If in connection mode, handle connection logic
+    if (isConnecting) {
+      if (!selectedNode) {
+        // First node selected - just select it
+        setSelectedNode(node.id)
+        setSelectedNodeData(node.data)
+      } else if (selectedNode !== node.id) {
+        // Second click on different node - create edge
+        createEdgeMutation.mutate({
+          sourceNodeId: selectedNode,
+          targetNodeId: node.id,
+        })
+        setSelectedNode(null)
+      }
+    } else {
+      // Normal mode - just select the node
       setSelectedNode(node.id)
-      setIsConnecting(true)
       setSelectedNodeData(node.data)
-    } else if (selectedNode && selectedNode !== node.id) {
-      // Second click on different node - create edge
-      createEdgeMutation.mutate({
-        sourceNodeId: selectedNode,
-        targetNodeId: node.id,
-      })
-      setIsConnecting(false)
-      setSelectedNode(null)
     }
   }, [selectedNode, createEdgeMutation, isEditingEnabled, isConnecting])
 
@@ -524,6 +528,26 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
             {createNodeMutation.isPending ? "Creating..." : "Add Node"}
           </Button>
           
+          <Button 
+            onClick={() => setIsConnecting(!isConnecting)}
+            disabled={!isEditingEnabled}
+            variant={isConnecting ? "default" : "outline"}
+            className={`w-full ${isConnecting ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+            size="sm"
+          >
+            {isConnecting ? (
+              <>
+                <Link2Off className="h-4 w-4 mr-2" />
+                Cancel Connection Mode
+              </>
+            ) : (
+              <>
+                <Link2 className="h-4 w-4 mr-2" />
+                Connect Nodes
+              </>
+            )}
+          </Button>
+          
           {selectedNode && isEditingEnabled && (
             <Button 
               onClick={handleDeleteNode}
@@ -541,9 +565,17 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         {/* Connection instructions */}
         {isEditingEnabled && (
           <div className="mt-3 text-xs text-gray-400">
-            <p><strong>To connect:</strong> Click node, then another</p>
-            <p><strong>To delete:</strong> Select node and press Del</p>
-            <p><strong>To cancel:</strong> Press Esc</p>
+            {isConnecting ? (
+              <>
+                <p className="text-blue-400"><strong>Connection Mode:</strong> Click two nodes to connect</p>
+                <p><strong>To cancel:</strong> Click button again or press Esc</p>
+              </>
+            ) : (
+              <>
+                <p><strong>To connect:</strong> Click "Connect Nodes" button</p>
+                <p><strong>To delete:</strong> Select node and press Del</p>
+              </>
+            )}
           </div>
         )}
       </div>
