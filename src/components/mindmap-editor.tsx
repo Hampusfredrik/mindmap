@@ -25,7 +25,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Textarea } from "@/components/ui/textarea"
 
 // Modern custom node component with selection state and editing
-function CustomNode({ data, id, selected, onUpdateTitle, ...props }: NodeProps & { onUpdateTitle?: (id: string, newTitle: string, updatedAt: string) => void }) {
+function CustomNode(props: NodeProps & { onUpdateTitle?: (id: string, newTitle: string, updatedAt: string) => void }) {
+  const { data, id, selected } = props
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(data.label)
 
@@ -37,12 +38,12 @@ function CustomNode({ data, id, selected, onUpdateTitle, ...props }: NodeProps &
   const handleDoubleClick = (e: React.MouseEvent) => {
     console.log("Double click on node, entering edit mode")
     setIsEditing(true)
-    // Don't stop propagation - let ReactFlow handle the event
+    e.stopPropagation()
   }
 
   const handleTitleSubmit = () => {
-    if (onUpdateTitle && editTitle !== data.label && editTitle.trim() !== '') {
-      onUpdateTitle(id, editTitle, data.updatedAt)
+    if (props.onUpdateTitle && editTitle !== data.label && editTitle.trim() !== '') {
+      props.onUpdateTitle(id, editTitle, data.updatedAt)
     }
     setIsEditing(false)
   }
@@ -72,6 +73,8 @@ function CustomNode({ data, id, selected, onUpdateTitle, ...props }: NodeProps &
           onChange={handleInputChange}
           onBlur={handleTitleSubmit}
           onKeyDown={handleKeyPress}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
           className="w-full bg-transparent border-none outline-none font-bold text-gray-900 text-center pointer-events-auto"
           autoFocus
         />
@@ -412,10 +415,11 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   // Define node types with update callback
   const nodeTypes: NodeTypes = useMemo(() => ({
-    default: (props: any) => (
+    default: (nodeProps: NodeProps) => (
       <CustomNode 
-        {...props} 
+        {...nodeProps} 
         onUpdateTitle={(id, newTitle, updatedAt) => {
+          console.log("Updating title for node", id, "to", newTitle)
           updateNodeTitleMutation.mutate({ id, title: newTitle, updatedAt })
         }}
       />
