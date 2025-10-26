@@ -8,8 +8,6 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Background,
-  Controls,
-  MiniMap,
   NodeTypes,
   EdgeTypes,
   ReactFlowProvider,
@@ -92,7 +90,6 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [selectedNodeData, setSelectedNodeData] = useState<any>(null)
-  const [performanceMode, setPerformanceMode] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const { fitView } = useReactFlow()
 
@@ -180,10 +177,6 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     }
   }, [initialEdges, setEdges, graphId])
 
-  // Performance mode detection
-  useEffect(() => {
-    setPerformanceMode(nodes.length > 50 || edges.length > 100)
-  }, [nodes.length, edges.length])
 
   // Mobile read-only mode
   const [isEditingEnabled, setIsEditingEnabled] = useState(!isMobile)
@@ -579,14 +572,12 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         nodesConnectable={isEditingEnabled}
         elementsSelectable={isEditingEnabled}
         defaultEdgeOptions={{
-          type: performanceMode ? 'straight' : 'smoothstep',
-          animated: !performanceMode,
+          type: 'smoothstep',
+          animated: false,
           style: { strokeWidth: 2, stroke: '#9ca3af' },
         }}
       >
         <Background color="#404040" gap={20} size={1} />
-        <Controls />
-        {!performanceMode && <MiniMap nodeColor="#3b82f6" />}
       </ReactFlow>
 
 
