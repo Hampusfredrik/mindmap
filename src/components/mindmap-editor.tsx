@@ -298,7 +298,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         setSelectedNode(node.id)
         setSelectedNodeData(node.data)
       } else if (selectedNode !== node.id) {
-        // Second click on different node - create edge
+        // Second click on different node - create edge with smart handle selection
         const sourceNode = nodes.find(n => n.id === selectedNode)
         const targetNode = nodes.find(n => n.id === node.id)
         
@@ -308,8 +308,8 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
           const sourceY = sourceNode.position.y
           const isTargetBelow = targetY > sourceY
           
-          const sourceHandle = isTargetBelow ? 'source-bottom' : 'source-top'
-          const targetHandle = isTargetBelow ? 'target-top' : 'target-bottom'
+          const sourceHandle = isTargetBelow ? 'bottom' : 'top'
+          const targetHandle = isTargetBelow ? 'top' : 'bottom'
 
           createEdgeMutation.mutate({
             sourceNodeId: selectedNode,
@@ -355,8 +355,8 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     // If target is ABOVE source (targetY < sourceY): use top handle for source, bottom handle for target
     const isTargetBelow = targetY > sourceY
     
-    const sourceHandle = isTargetBelow ? 'source-bottom' : 'source-top'
-    const targetHandle = isTargetBelow ? 'target-top' : 'target-bottom'
+    const sourceHandle = isTargetBelow ? 'bottom' : 'top'
+    const targetHandle = isTargetBelow ? 'top' : 'bottom'
 
     createEdgeMutation.mutate({
       sourceNodeId: connection.source,
