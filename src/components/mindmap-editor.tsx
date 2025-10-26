@@ -231,7 +231,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   // Edge creation mutation
   const createEdgeMutation = useMutation({
-    mutationFn: async (data: { sourceNodeId: string; targetNodeId: string }) => {
+    mutationFn: async (data: { sourceNodeId: string; targetNodeId: string; sourceHandle?: string; targetHandle?: string }) => {
       const response = await fetch("/api/edges", {
         method: "POST",
         headers: {
@@ -251,7 +251,9 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         setEdges((eds) => [...eds, {
           id: newEdge.id,
           source: newEdge.sourceNodeId,
+          sourceHandle: data.sourceHandle,
           target: newEdge.targetNodeId,
+          targetHandle: data.targetHandle,
           type: "default",
           data: {
             detail: newEdge.detail,
@@ -314,6 +316,38 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
     setSelectedNode(null)
     setIsConnecting(false)
   }, [])
+
+  // Custom connection handler to enforce directional handles
+  const onConnect = useCallback((connection: Connection) => {
+    if (!connection.source || !connection.target) return
+    if (!isEditingEnabled) return
+
+    const sourceNode = nodes.find(n => n.id === connection.source)
+    const targetNode = nodes.find(n => n.id === connection.target)
+    
+    if (!sourceNode || !targetNode) return
+
+    // Determine which direction the target is relative to source
+    const targetY = targetNode.position.y
+    const sourceY = sourceNode.position.y
+    
+    // If target is BELOW source (targetY > sourceY): use bottom handle for source, top handle for target
+    // If target is ABOVE source (targetY < sourceY): use top handle for source, bottom handle for target
+    const isTargetBelow = targetY > sourceY
+    
+    const sourceHandle = isTargetBelow ? 'bottom' : 'top'
+    const targetHandle = isTargetBelow ? 'top' : 'bottom'
+
+    createEdgeMutation.mutate({
+      sourceNodeId: connection.source,
+      targetNodeId: connection.target,
+      sourceHandle,
+      targetHandle,
+    })
+    
+    setSelectedNode(null)
+    setIsConnecting(false)
+  }, [nodes, isEditingEnabled, createEdgeMutation, setIsConnecting])
 
   // Node detail update mutation
   const updateNodeDetailMutation = useMutation({
@@ -573,6 +607,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         onNodeDragStop={onNodeDragStop}
+        onConnect={onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
