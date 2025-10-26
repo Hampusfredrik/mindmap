@@ -33,11 +33,23 @@ export async function PUT(
       }
       
       const nodeIndex = global.mockNodes.findIndex((node: any) => node.id === resolvedParams.id)
+      
       if (nodeIndex === -1) {
-        return NextResponse.json(
-          { error: "Node not found" },
-          { status: 404 }
-        )
+        // Node not found - create it as a placeholder (this handles server restarts)
+        console.log("Mock node not found in memory, creating placeholder:", resolvedParams.id)
+        const newNode = {
+          id: resolvedParams.id,
+          graphId: body.graphId || 'unknown',
+          title: updateData.title || 'Untitled',
+          x: body.x || 0,
+          y: body.y || 0,
+          detail: updateData.detail || "",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ...updateData,
+        }
+        global.mockNodes.push(newNode)
+        return NextResponse.json(newNode)
       }
       
       // Update the mock node
