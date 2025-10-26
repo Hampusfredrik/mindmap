@@ -16,6 +16,7 @@ import ReactFlow, {
   useReactFlow,
   getBezierPath,
   NodeProps,
+  EdgeProps,
 } from "reactflow"
 import "reactflow/dist/style.css"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -95,7 +96,8 @@ function CustomNode(props: NodeProps & { onUpdateTitle?: (id: string, newTitle: 
 }
 
 // Custom edge component with arrows
-function CustomEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, selected }: any) {
+function CustomEdge(props: EdgeProps) {
+  const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style, selected } = props
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -112,6 +114,7 @@ function CustomEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, ta
       className="react-flow__edge-path stroke-2"
       d={edgePath}
       markerEnd="url(#arrowclosed)"
+      fill="none"
     />
   )
 }
