@@ -49,10 +49,11 @@ function CustomNode({ data, id, selected }: { data: any; id: string; selected?: 
   }
 
   // Determine node type based on title or data
-  const nodeType = data.type || 'default'
+  type NodeType = 'start' | 'end' | 'agent' | 'guardrail' | 'default'
+  const nodeType: NodeType = (data.type || 'default') as NodeType
   
   // Color schemes for different node types
-  const nodeColors = {
+  const nodeColors: Record<NodeType, string> = {
     start: 'bg-teal-600 border-teal-500',
     end: 'bg-teal-600 border-teal-500',
     agent: 'bg-blue-600 border-blue-500',
@@ -60,7 +61,7 @@ function CustomNode({ data, id, selected }: { data: any; id: string; selected?: 
     default: 'bg-blue-600 border-blue-500',
   }
   
-  const colorClass = nodeColors[nodeType] || nodeColors.default
+  const colorClass = nodeColors[nodeType]
 
   return (
     <div className={`px-6 py-4 shadow-lg rounded-lg ${colorClass} cursor-pointer transition-all duration-200 hover:scale-105 ${
