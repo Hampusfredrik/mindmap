@@ -15,6 +15,7 @@ import ReactFlow, {
   ReactFlowProvider,
   useReactFlow,
   getBezierPath,
+  NodeProps,
 } from "reactflow"
 import "reactflow/dist/style.css"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -24,7 +25,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Textarea } from "@/components/ui/textarea"
 
 // Modern custom node component with selection state and editing
-function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: string; selected?: boolean; onUpdateTitle?: (id: string, newTitle: string, updatedAt: string) => void }) {
+function CustomNode({ data, id, selected, onUpdateTitle, ...props }: NodeProps & { onUpdateTitle?: (id: string, newTitle: string, updatedAt: string) => void }) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(data.label)
 
@@ -34,8 +35,9 @@ function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: stri
   }, [data.label])
 
   const handleDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
+    console.log("Double click on node, entering edit mode")
     setIsEditing(true)
+    // Don't stop propagation - let ReactFlow handle the event
   }
 
   const handleTitleSubmit = () => {
@@ -54,10 +56,6 @@ function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: stri
     }
   }
 
-  const handleInputClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-  }
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditTitle(e.target.value)
   }
@@ -74,8 +72,7 @@ function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: stri
           onChange={handleInputChange}
           onBlur={handleTitleSubmit}
           onKeyDown={handleKeyPress}
-          onClick={handleInputClick}
-          className="w-full bg-transparent border-none outline-none font-bold text-gray-900 text-center"
+          className="w-full bg-transparent border-none outline-none font-bold text-gray-900 text-center pointer-events-auto"
           autoFocus
         />
       ) : (
