@@ -577,11 +577,11 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ 
-          padding: 0.2,
-          maxZoom: 1.5,
+          padding: 0.5,
+          maxZoom: 0.7,
           minZoom: 0.3
         }}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.5 }}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.4 }}
         minZoom={0.3}
         maxZoom={2}
         attributionPosition="bottom-left"
