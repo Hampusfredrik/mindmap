@@ -581,7 +581,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
           maxZoom: 0.7,
           minZoom: 0.3
         }}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.4 }}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.5 }}
         minZoom={0.3}
         maxZoom={2}
         attributionPosition="bottom-left"
