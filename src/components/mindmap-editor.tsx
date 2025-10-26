@@ -191,10 +191,31 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         }),
       })
       if (!response.ok) throw new Error("Failed to create node")
-      return response.json()
+      const newNode = await response.json()
+      
+      // For mock nodes, add to local nodes state to avoid refetch
+      if (newNode.id?.startsWith('mock-node-')) {
+        setNodes((nds) => [...nds, {
+          id: newNode.id,
+          type: "default",
+          position: { x: newNode.x || 0, y: newNode.y || 0 },
+          data: {
+            label: newNode.title,
+            detail: newNode.detail,
+            updatedAt: newNode.updatedAt,
+            graphId: graphId,
+          },
+        }])
+        return newNode
+      }
+      
+      return newNode
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      // Only invalidate for real graphs, not mock graphs
+      if (!graphId.startsWith('mock-')) {
+        queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      }
       toast.success("Node created")
     },
     onError: () => {
@@ -217,11 +238,32 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         }),
       })
       if (!response.ok) throw new Error("Failed to create edge")
-      return response.json()
+      const newEdge = await response.json()
+      
+      // For mock graphs, add edge to local state
+      if (graphId.startsWith('mock-')) {
+        setEdges((eds) => [...eds, {
+          id: newEdge.id,
+          source: newEdge.sourceNodeId,
+          target: newEdge.targetNodeId,
+          type: "default",
+          data: {
+            detail: newEdge.detail,
+            updatedAt: newEdge.updatedAt,
+            graphId: graphId,
+          },
+        }])
+      }
+      
+      return newEdge
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      // Only invalidate for real graphs, not mock graphs
+      if (!graphId.startsWith('mock-')) {
+        queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      }
       toast.success("Connection created")
+      setIsConnecting(false)
       setSelectedNode(null)
     },
     onError: () => {
@@ -328,7 +370,10 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       return response.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      // Only invalidate for real graphs, not mock graphs
+      if (!graphId.startsWith('mock-')) {
+        queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      }
       toast.success("Node deleted")
       setSelectedNode(null)
     },
