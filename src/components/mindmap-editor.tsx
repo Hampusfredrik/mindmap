@@ -291,7 +291,13 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
-      if (!response.ok) throw new Error("Failed to update node position")
+      if (!response.ok) {
+        // Don't show error for missing nodes during position updates (likely mock reset)
+        if (response.status !== 404) {
+          throw new Error("Failed to update node position")
+        }
+        return null
+      }
       return response.json()
     },
     onError: () => {
