@@ -589,7 +589,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         nodesConnectable={isEditingEnabled}
         elementsSelectable={isEditingEnabled}
         defaultEdgeOptions={{
-          type: 'smoothstep',
+          type: 'straight',
           animated: false,
           style: { strokeWidth: 2, stroke: '#9ca3af' },
         }}

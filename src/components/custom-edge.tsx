@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useState, useMemo, useEffect } from "react"
-import { EdgeProps, getBezierPath, EdgeLabelRenderer } from "reactflow"
+import { EdgeProps, getSmoothStepPath, EdgeLabelRenderer } from "reactflow"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
@@ -29,7 +29,7 @@ export function CustomEdge({
     setDetail(data?.detail || "")
   }, [data?.detail])
 
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
