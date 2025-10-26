@@ -539,7 +539,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         attributionPosition="bottom-left"
         nodesDraggable={isEditingEnabled}
         nodesConnectable={isEditingEnabled}
-        elementsSelectable={isEditingEnabled}
+        elementsSelectable={true}
         defaultEdgeOptions={{
           type: performanceMode ? 'straight' : 'smoothstep',
           animated: !performanceMode,
