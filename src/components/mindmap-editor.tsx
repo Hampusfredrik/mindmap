@@ -505,23 +505,16 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       )}
 
       {/* Header with controls */}
-      <div className={`absolute z-10 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-4 ${
-        isMobile ? 'top-20 left-4 right-4' : 'top-4 left-4'
+      <div className={`absolute z-10 bg-gray-800 rounded-lg shadow-lg border border-gray-700 ${
+        isMobile ? 'top-20 left-4 right-4 p-3' : 'top-4 left-4 p-3'
       }`}>
-        <h2 className="text-lg font-bold mb-2 text-white">Mindmap Editor</h2>
-        <div className="text-sm text-gray-300 space-y-1">
-          <p>Title: {graphData.graph.title}</p>
-          <p>Nodes: {nodes.length}</p>
-          <p>Edges: {edges.length}</p>
-          {performanceMode && <p className="text-orange-400 font-medium">Performance Mode</p>}
-          {isConnecting && <p className="text-blue-400 font-medium">Select target node...</p>}
-        </div>
+        <h2 className="text-base font-semibold mb-3 text-white">{graphData.graph.title}</h2>
         
-        <div className="mt-3 space-y-2">
+        <div className="space-y-2">
           <Button 
             onClick={addTestNode}
             disabled={createNodeMutation.isPending || !isEditingEnabled}
-            className="w-full"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0"
             size="sm"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -532,18 +525,18 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
             onClick={() => setIsConnecting(!isConnecting)}
             disabled={!isEditingEnabled}
             variant={isConnecting ? "default" : "outline"}
-            className={`w-full ${isConnecting ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+            className={`w-full ${isConnecting ? 'bg-green-600 hover:bg-green-700 text-white border-0' : 'bg-transparent border-gray-600 hover:bg-gray-700 text-gray-300'}`}
             size="sm"
           >
             {isConnecting ? (
               <>
                 <Link2Off className="h-4 w-4 mr-2" />
-                Cancel Connection Mode
+                Cancel
               </>
             ) : (
               <>
                 <Link2 className="h-4 w-4 mr-2" />
-                Connect Nodes
+                Connect
               </>
             )}
           </Button>
@@ -553,29 +546,18 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
               onClick={handleDeleteNode}
               disabled={deleteNodeMutation.isPending}
               variant="destructive"
-              className="w-full"
+              className="w-full bg-red-600 hover:bg-red-700 text-white border-0"
               size="sm"
             >
               <X className="h-4 w-4 mr-2" />
-              Delete Node (Del)
+              Delete (Del)
             </Button>
           )}
         </div>
         
-        {/* Connection instructions */}
-        {isEditingEnabled && (
-          <div className="mt-3 text-xs text-gray-400">
-            {isConnecting ? (
-              <>
-                <p className="text-blue-400"><strong>Connection Mode:</strong> Click two nodes to connect</p>
-                <p><strong>To cancel:</strong> Click button again or press Esc</p>
-              </>
-            ) : (
-              <>
-                <p><strong>To connect:</strong> Click "Connect Nodes" button</p>
-                <p><strong>To delete:</strong> Select node and press Del</p>
-              </>
-            )}
+        {isConnecting && (
+          <div className="mt-3 text-xs text-center text-blue-400 bg-blue-900/30 py-2 rounded">
+            Connection Mode Active
           </div>
         )}
       </div>
@@ -607,28 +589,6 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         {!performanceMode && <MiniMap nodeColor="#3b82f6" />}
       </ReactFlow>
 
-      {/* Instructions */}
-      <div className={`absolute z-10 bg-gray-800 border border-gray-700 rounded-lg p-3 ${
-        isMobile ? 'bottom-4 left-4 right-4' : 'bottom-4 left-4 max-w-sm'
-      }`}>
-        <p className="text-white text-sm">
-          <strong>Interactive Mindmap</strong><br/>
-          {isEditingEnabled ? (
-            <span className="text-gray-300">
-              • Click to select nodes<br/>
-              • Click two nodes to connect<br/>
-              • Click selected node to edit details<br/>
-              • Drag to move nodes
-            </span>
-          ) : (
-            <span className="text-gray-300">
-              • Click nodes to view details<br/>
-              • Use controls to zoom/pan<br/>
-              • Enable editing to modify
-            </span>
-          )}
-        </p>
-      </div>
 
       {/* Node Detail Sheet */}
       <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
