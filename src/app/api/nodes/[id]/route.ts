@@ -35,31 +35,28 @@ export async function PUT(
       const nodeIndex = global.mockNodes.findIndex((node: any) => node.id === resolvedParams.id)
       
       if (nodeIndex === -1) {
-        // Node not found - create it as a placeholder (this handles server restarts)
-        console.log("Mock node not found in memory, creating placeholder:", resolvedParams.id)
-        const newNode = {
-          id: resolvedParams.id,
-          graphId: body.graphId || 'unknown',
-          title: updateData.title || 'Untitled',
-          x: body.x || 0,
-          y: body.y || 0,
-          detail: updateData.detail || "",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          ...updateData,
-        }
-        global.mockNodes.push(newNode)
-        return NextResponse.json(newNode)
+        // Node not found - this should not happen, return error
+        console.error("Mock node not found in memory:", resolvedParams.id)
+        return NextResponse.json(
+          { error: "Node not found" },
+          { status: 404 }
+        )
       }
       
-      // Update the mock node
-      global.mockNodes[nodeIndex] = {
-        ...global.mockNodes[nodeIndex],
+      // Update only the fields that were provided
+      const existingNode = global.mockNodes[nodeIndex]
+      const updatedNode = {
+        ...existingNode,
         ...updateData,
         updatedAt: new Date().toISOString(),
       }
       
-      return NextResponse.json(global.mockNodes[nodeIndex])
+      // Preserve position if not updating
+      if (updateData.x !== undefined) updatedNode.x = updateData.x
+      if (updateData.y !== undefined) updatedNode.y = updateData.y
+      
+      global.mockNodes[nodeIndex] = updatedNode
+      return NextResponse.json(updatedNode)
     }
     
     try {
