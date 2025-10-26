@@ -242,9 +242,10 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         label: node.title,
         detail: node.detail,
         updatedAt: node.updatedAt,
+        graphId: graphId,
       },
     }))
-  }, [graphData?.nodes])
+  }, [graphData?.nodes, graphId])
 
   const initialEdges: Edge[] = useMemo(() => {
     if (!graphData?.edges) return []

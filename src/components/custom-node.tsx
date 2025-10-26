@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import debounce from "lodash/debounce"
 
 export function CustomNode({ data, id }: NodeProps) {
+  const queryClient = useQueryClient()
+  const graphId = data.graphId
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(data.label || "")
@@ -34,6 +36,12 @@ export function CustomNode({ data, id }: NodeProps) {
         throw new Error("Failed to update node")
       }
       return response.json()
+    },
+    onSuccess: () => {
+      if (graphId) {
+        queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+      }
+      toast.success("Node updated")
     },
     onError: (error) => {
       if (error.message === "CONCURRENT_MODIFICATION") {
@@ -95,6 +103,15 @@ export function CustomNode({ data, id }: NodeProps) {
       inputRef.current.select()
     }
   }, [isEditing])
+
+  // Sync local state with props when they change
+  useEffect(() => {
+    setTitle(data.label || "")
+  }, [data.label])
+
+  useEffect(() => {
+    setDetail(data.detail || "")
+  }, [data.detail])
 
   return (
     <>
