@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState, useMemo } from "react"
+import { useCallback, useState, useMemo, useRef, useEffect } from "react"
 import { Handle, Position, NodeProps } from "reactflow"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -12,8 +12,10 @@ import debounce from "lodash/debounce"
 
 export function CustomNode({ data, id }: NodeProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(data.label || "")
   const [detail, setDetail] = useState(data.detail || "")
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const updateNodeMutation = useMutation({
     mutationFn: async (updateData: { title?: string; detail?: string }) => {
@@ -66,14 +68,69 @@ export function CustomNode({ data, id }: NodeProps) {
     setIsSheetOpen(false)
   }, [title, data.label, updateNodeMutation])
 
+  const handleStartEdit = useCallback(() => {
+    setIsEditing(true)
+  }, [])
+
+  const handleFinishEdit = useCallback(() => {
+    setIsEditing(false)
+    if (title !== data.label) {
+      updateNodeMutation.mutate({ title })
+    }
+  }, [title, data.label, updateNodeMutation])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleFinishEdit()
+    } else if (e.key === 'Escape') {
+      setTitle(data.label)
+      setIsEditing(false)
+    }
+  }, [handleFinishEdit, data.label])
+
+  // Auto-focus and select text when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
   return (
     <>
       <div 
-        className="px-6 py-4 shadow-lg rounded-lg bg-blue-600 border-2 border-blue-500 cursor-pointer hover:border-blue-400 transition-all duration-200"
-        onClick={() => setIsSheetOpen(true)}
+        className="px-6 py-4 shadow-lg rounded-lg bg-blue-600 border-2 border-blue-500 hover:border-blue-400 transition-all duration-200 relative group"
       >
         <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-400" />
-        <div className="font-semibold text-white text-center">{title}</div>
+        
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={handleFinishEdit}
+            onKeyDown={handleKeyDown}
+            className="w-full bg-transparent border-none outline-none font-semibold text-white text-center"
+            type="text"
+          />
+        ) : (
+          <div 
+            className="font-semibold text-white text-center cursor-pointer"
+            onClick={handleStartEdit}
+          >
+            {title}
+          </div>
+        )}
+        
+        {/* Edit details button */}
+        <button
+          onClick={() => setIsSheetOpen(true)}
+          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 flex items-center justify-center text-white hover:bg-white/20 rounded"
+          title="Edit details"
+        >
+          ⋮
+        </button>
+        
         <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-gray-400" />
       </div>
       
