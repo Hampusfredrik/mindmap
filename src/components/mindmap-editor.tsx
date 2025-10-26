@@ -67,7 +67,7 @@ function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: stri
       selected 
         ? 'border-blue-500 bg-blue-50 shadow-blue-200' 
         : 'border-gray-200 hover:border-blue-300'
-    }`}>
+    }`} onDoubleClick={handleDoubleClick}>
       {isEditing ? (
         <input
           value={editTitle}
@@ -79,10 +79,7 @@ function CustomNode({ data, id, selected, onUpdateTitle }: { data: any; id: stri
           autoFocus
         />
       ) : (
-        <div 
-          className="font-bold text-gray-900 hover:text-blue-600 transition-colors"
-          onDoubleClick={handleDoubleClick}
-        >
+        <div className="font-bold text-gray-900 hover:text-blue-600 transition-colors">
           {data.label}
         </div>
       )}
@@ -315,6 +312,8 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   // React Flow event handlers
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    console.log("Node clicked:", node.id, "selectedNode:", selectedNode)
+    
     if (!isEditingEnabled) {
       // In read-only mode, open detail sheet
       setSelectedNodeData(node.data)
@@ -324,16 +323,19 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
     if (selectedNode === node.id) {
       // Second click on same node - open detail sheet
+      console.log("Opening detail sheet for node:", node.id)
       setSelectedNodeData(node.data)
       setDetailSheetOpen(true)
     } else if (selectedNode) {
       // Second click on different node - create edge
+      console.log("Creating edge from", selectedNode, "to", node.id)
       createEdgeMutation.mutate({
         sourceNodeId: selectedNode,
         targetNodeId: node.id,
       })
     } else {
       // First click - select node
+      console.log("Selecting node:", node.id)
       setSelectedNode(node.id)
     }
   }, [selectedNode, createEdgeMutation, isEditingEnabled])
