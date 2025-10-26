@@ -24,7 +24,7 @@ export async function PUT(
   try {
     const body = await request.json()
     const resolvedParams = await params
-    const { updatedAt, ...updateData } = updateNodeSchema.parse({ ...body, id: resolvedParams.id })
+    const { updatedAt, ...updateData } = body
     
     // For mock nodes, update in memory
     if (resolvedParams.id.startsWith('mock-node-')) {
@@ -51,6 +51,11 @@ export async function PUT(
     }
     
     try {
+      // Validate input if it's a real database node (skip for mock)
+      if (!resolvedParams.id.startsWith('mock-node-')) {
+        updateNodeSchema.parse({ ...body, id: resolvedParams.id })
+      }
+      
       // Get the node to verify ownership through graph
       const existingNode = await db
         .select({
