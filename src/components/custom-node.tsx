@@ -37,13 +37,17 @@ export function CustomNode({ data, id, selected }: NodeProps) {
       }
       return response.json()
     },
-    onSuccess: () => {
-      if (graphId) {
-        queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+    onSuccess: (_, variables) => {
+      // Only show toast for title updates, not detail updates (which happen as you type)
+      if (variables.title) {
+        if (graphId) {
+          queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
+        }
+        toast.success("Node updated")
       }
-      toast.success("Node updated")
+      // Detail updates are silent to avoid constant notifications
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       if (error.message === "CONCURRENT_MODIFICATION") {
         toast.error("Other changes detected. Please reload and try again.")
       } else {
@@ -52,7 +56,7 @@ export function CustomNode({ data, id, selected }: NodeProps) {
     },
   })
 
-  // Debounced update for detail
+  // Debounced update for detail - don't invalidate query on every keystroke
   const debouncedUpdateDetail = useMemo(
     () => debounce((newDetail: string) => {
       updateNodeMutation.mutate({ detail: newDetail })
@@ -159,6 +163,7 @@ export function CustomNode({ data, id, selected }: NodeProps) {
         <SheetContent className="w-[400px] sm:w-[540px]">
           <SheetHeader>
             <SheetTitle>Edit Node</SheetTitle>
+            <p className="text-sm text-gray-500">Changes are saved automatically</p>
           </SheetHeader>
           
           <div className="space-y-4 mt-6">
