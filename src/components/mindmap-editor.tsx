@@ -160,12 +160,25 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
   // Update nodes when data changes
   useEffect(() => {
-    setNodes(initialNodes)
-  }, [initialNodes, setNodes])
+    // For mock graphs, don't overwrite local state updates
+    // This prevents losing optimistically added nodes/edges
+    if (!graphId.startsWith('mock-')) {
+      setNodes(initialNodes)
+    }
+    // For mock graphs, only set initialNodes on first load (when nodes is empty)
+    else if (nodes.length === 0 && initialNodes.length > 0) {
+      setNodes(initialNodes)
+    }
+  }, [initialNodes, setNodes, graphId])
 
   useEffect(() => {
-    setEdges(initialEdges)
-  }, [initialEdges, setEdges])
+    // Same logic for edges
+    if (!graphId.startsWith('mock-')) {
+      setEdges(initialEdges)
+    } else if (edges.length === 0 && initialEdges.length > 0) {
+      setEdges(initialEdges)
+    }
+  }, [initialEdges, setEdges, graphId])
 
   // Performance mode detection
   useEffect(() => {
