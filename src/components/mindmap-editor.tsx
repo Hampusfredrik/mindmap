@@ -376,21 +376,22 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       const response = await fetch(`/api/nodes/${nodeId}`, {
         method: "DELETE",
       })
-      if (!response.ok) throw new Error("Failed to delete node")
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "Failed to delete node" }))
+        throw new Error(error.error || "Failed to delete node")
+      }
       return response.json()
     },
     onSuccess: () => {
-      // Only invalidate for real graphs, not mock graphs
-      if (!graphId.startsWith('mock-')) {
-        queryClient.invalidateQueries({ queryKey: ["graph", graphId] })
-      }
       toast.success("Node deleted")
       setSelectedNode(null)
     },
-    onError: () => {
-      toast.error("Failed to delete node")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete node")
+      console.error("Delete error:", error)
     },
   })
+
 
   // Delete edge mutation
   const deleteEdgeMutation = useMutation({
@@ -422,7 +423,15 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
   // Delete selected node
   const handleDeleteNode = () => {
     if (selectedNode) {
-      deleteNodeMutation.mutate(selectedNode)
+      // Handle mock nodes locally
+      if (selectedNode.startsWith('mock-node-') && graphId.startsWith('mock-')) {
+        setNodes((nds) => nds.filter((n) => n.id !== selectedNode))
+        setEdges((eds) => eds.filter((e) => e.source !== selectedNode && e.target !== selectedNode))
+        setSelectedNode(null)
+        toast.success("Node deleted")
+      } else {
+        deleteNodeMutation.mutate(selectedNode)
+      }
     }
   }
 
