@@ -135,10 +135,10 @@ export function CustomNode({ data, id, selected }: NodeProps) {
   return (
     <>
       <div 
-        className={`px-6 py-4 shadow-lg rounded-lg bg-blue-600 border-2 transition-all duration-200 relative group ${
+        className={`px-6 py-4 shadow-lg rounded-xl transition-all duration-200 relative group ${
           selected 
-            ? 'border-yellow-400 ring-2 ring-yellow-400 ring-offset-2 ring-offset-gray-800 scale-105' 
-            : 'border-blue-500 hover:border-blue-400'
+            ? 'bg-purple-600 scale-105 ring-4 ring-purple-400/50' 
+            : 'bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500'
         }`}
       >
         <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-400" />
@@ -150,12 +150,12 @@ export function CustomNode({ data, id, selected }: NodeProps) {
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleFinishEdit}
             onKeyDown={handleKeyDown}
-            className="w-full bg-transparent border-none outline-none font-semibold text-white text-center"
+            className="w-full bg-transparent border-none outline-none font-medium text-white text-center"
             type="text"
           />
         ) : (
           <div 
-            className="font-semibold text-white text-center cursor-pointer"
+            className="font-medium text-white text-center cursor-pointer"
             onClick={handleStartEdit}
           >
             {title}
