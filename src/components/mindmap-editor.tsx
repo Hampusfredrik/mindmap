@@ -299,10 +299,30 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
         setSelectedNodeData(node.data)
       } else if (selectedNode !== node.id) {
         // Second click on different node - create edge
-        createEdgeMutation.mutate({
-          sourceNodeId: selectedNode,
-          targetNodeId: node.id,
-        })
+        const sourceNode = nodes.find(n => n.id === selectedNode)
+        const targetNode = nodes.find(n => n.id === node.id)
+        
+        if (sourceNode && targetNode) {
+          // Determine which direction the target is relative to source
+          const targetY = targetNode.position.y
+          const sourceY = sourceNode.position.y
+          const isTargetBelow = targetY > sourceY
+          
+          const sourceHandle = isTargetBelow ? 'bottom' : 'top'
+          const targetHandle = isTargetBelow ? 'top' : 'bottom'
+
+          createEdgeMutation.mutate({
+            sourceNodeId: selectedNode,
+            targetNodeId: node.id,
+            sourceHandle,
+            targetHandle,
+          })
+        } else {
+          createEdgeMutation.mutate({
+            sourceNodeId: selectedNode,
+            targetNodeId: node.id,
+          })
+        }
         setSelectedNode(null)
       }
     } else {
