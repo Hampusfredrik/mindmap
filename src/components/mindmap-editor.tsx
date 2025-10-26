@@ -37,8 +37,8 @@ function CustomNode(props: NodeProps & { onUpdateTitle?: (id: string, newTitle: 
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     console.log("Double click on node, entering edit mode")
+    e.stopPropagation() // Prevent React Flow from handling this
     setIsEditing(true)
-    e.stopPropagation()
   }
 
   const handleTitleSubmit = () => {
@@ -66,7 +66,7 @@ function CustomNode(props: NodeProps & { onUpdateTitle?: (id: string, newTitle: 
       selected 
         ? 'border-blue-500 bg-blue-50 shadow-blue-200' 
         : 'border-gray-200 hover:border-blue-300'
-    }`} onDoubleClick={handleDoubleClick}>
+    }`}>
       {isEditing ? (
         <input
           value={editTitle}
@@ -75,11 +75,15 @@ function CustomNode(props: NodeProps & { onUpdateTitle?: (id: string, newTitle: 
           onKeyDown={handleKeyPress}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
-          className="w-full bg-transparent border-none outline-none font-bold text-gray-900 text-center pointer-events-auto"
+          onDoubleClick={(e) => e.stopPropagation()}
+          className="w-full bg-transparent border-none outline-none font-bold text-gray-900 text-center"
           autoFocus
         />
       ) : (
-        <div className="font-bold text-gray-900 hover:text-blue-600 transition-colors">
+        <div 
+          className="font-bold text-gray-900 hover:text-blue-600 transition-colors"
+          onDoubleClick={handleDoubleClick}
+        >
           {data.label}
         </div>
       )}
