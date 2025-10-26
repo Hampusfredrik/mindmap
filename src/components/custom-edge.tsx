@@ -123,6 +123,9 @@ export function CustomEdge({
                 placeholder="Add details about this connection..."
                 className="min-h-[200px]"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Changes are saved automatically
+              </p>
             </div>
             
             <Button onClick={() => setIsSheetOpen(false)} className="w-full">

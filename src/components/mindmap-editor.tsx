@@ -371,7 +371,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedNode && isEditingEnabled) {
           e.preventDefault()
-          handleDeleteNode()
+          deleteNodeMutation.mutate(selectedNode)
         }
       } else if (e.key === 'Escape') {
         setIsConnecting(false)
@@ -381,7 +381,7 @@ function MindmapEditorInner({ graphId, graphTitle }: MindmapEditorProps) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedNode, isEditingEnabled])
+  }, [selectedNode, isEditingEnabled, deleteNodeMutation])
 
   if (isLoading) {
     return (
