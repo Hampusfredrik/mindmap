@@ -20,12 +20,9 @@ body {
   overflow: hidden;
 }
 
-/* Custom dark grid pattern for ReactFlow background */
+/* Custom dark background for ReactFlow */
 .react-flow__background {
   background-color: #1a1a1a;
-  background-image: 
-    radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
-  background-size: 20px 20px;
 }
 
 .react-flow__controls {
