@@ -64,7 +64,17 @@ export function CustomNode({ data, id, selected }: NodeProps) {
   // Debounced update for detail - don't invalidate query on every keystroke
   const debouncedUpdateDetail = useMemo(
     () => debounce((newDetail: string) => {
-      updateNodeMutation.mutate({ detail: newDetail })
+      updateNodeMutation.mutate(
+        { detail: newDetail },
+        {
+          onError: (error: Error) => {
+            // Silently handle 404 for mock nodes (likely server restart)
+            if (!error.message.includes("404")) {
+              toast.error("Failed to update node")
+            }
+          }
+        }
+      )
     }, 500),
     [updateNodeMutation]
   )

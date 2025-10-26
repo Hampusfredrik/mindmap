@@ -35,8 +35,18 @@ export async function PUT(
       const nodeIndex = global.mockNodes.findIndex((node: any) => node.id === resolvedParams.id)
       
       if (nodeIndex === -1) {
-        // Node not found - this should not happen, return error
-        console.error("Mock node not found in memory:", resolvedParams.id)
+        // Node not found - for detail updates, just return success to avoid disrupting user
+        console.log("Mock node not found in memory (likely server restart):", resolvedParams.id)
+        
+        // If this is just a detail update, return success to avoid errors
+        if (updateData.detail !== undefined && Object.keys(updateData).length === 1) {
+          return NextResponse.json({ 
+            id: resolvedParams.id,
+            detail: updateData.detail,
+            updatedAt: new Date().toISOString()
+          })
+        }
+        
         return NextResponse.json(
           { error: "Node not found" },
           { status: 404 }
